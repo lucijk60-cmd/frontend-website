@@ -16,7 +16,7 @@ export const images = {
   galleryCoupe: "/manus-storage/ppf-studio-black-car_54ef85c6.jpg",
   detailSuv: "/manus-storage/ppf-installation-detail_d528883e.jpg",
   installation: "/manus-storage/ppf-studio-black-car_54ef85c6.jpg",
-  mark: "/manus-storage/aurelis-mark_3cb22a06.png",
+  mark: "/manus-storage/ppf-logo-user_b0af3209.png",
   secondaryDetail: "/manus-storage/ppf-installation-detail_d528883e.jpg",
   secondaryStudio: "/manus-storage/ppf-studio-black-car_54ef85c6.jpg",
 };
