@@ -26,6 +26,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
+  BRAND_NAME,
   galleryItems,
   images,
   translations,
@@ -48,9 +49,9 @@ function getStoredLanguage(): Language | null {
 
 function BrandMark({ compact = false }: { compact?: boolean }) {
   return (
-    <span className={compact ? "brand-lockup brand-lockup--compact" : "brand-lockup"}>
+    <span className={compact ? "brand-lockup brand-lockup--compact" : "brand-lockup"} aria-label={BRAND_NAME}>
       <img src={images.mark} alt="PPF Paint Protection Film logo" className="brand-mark" />
-      <span className="brand-wordmark">AURELIS</span>
+      <span className="brand-wordmark"><b>PPF</b><i>Studio</i></span>
     </span>
   );
 }
@@ -177,7 +178,7 @@ export default function Home() {
           <div className="preloader-orbit preloader-orbit--outer" />
           <div className="preloader-orbit preloader-orbit--inner" />
           <div className="preloader-logo-wrap"><img src={images.mark} alt="" className="preloader-mark" /><span className="preloader-corner preloader-corner--tl" /><span className="preloader-corner preloader-corner--br" /></div>
-          <div className="preloader-copy"><span className="preloader-kicker">PPF / PAINT PROTECTION FILM</span><strong>Preparing your finish</strong><span className="preloader-status">AURELIS / 2026</span></div>
+          <div className="preloader-copy"><span className="preloader-kicker">PPF / PAINT PROTECTION FILM</span><strong>Preparing your finish</strong><span className="preloader-status">PPFSTUDIO / 2026</span></div>
           <div className="preloader-progress"><span /></div>
         </div>
       )}
@@ -346,7 +347,7 @@ export default function Home() {
       </Dialog>
 
       <Dialog open={!isLoading && showLanguageModal} onOpenChange={() => undefined}>
-        <DialogContent className="language-dialog" showCloseButton={false}><DialogTitle>{c.modalTitle}</DialogTitle><DialogDescription>{c.modalBody}</DialogDescription><div className="language-cards"><button onClick={() => selectLanguage("ar")} className="language-card language-card--ar"><span className="language-code">AR</span><strong>{c.modalArabic}</strong><small>{c.modalArabicHint}</small><ArrowUpRight size={19} /></button><button onClick={() => selectLanguage("en")} className="language-card"><span className="language-code">EN</span><strong>{c.modalEnglish}</strong><small>{c.modalEnglishHint}</small><ArrowUpRight size={19} /></button></div><div className="language-modal-foot"><img src={images.mark} alt="PPF Paint Protection Film logo" /> <span>AURELIS / 2026</span></div></DialogContent>
+        <DialogContent className="language-dialog" showCloseButton={false}><DialogTitle>{c.modalTitle}</DialogTitle><DialogDescription>{c.modalBody}</DialogDescription><div className="language-cards"><button onClick={() => selectLanguage("ar")} className="language-card language-card--ar"><span className="language-code">AR</span><strong>{c.modalArabic}</strong><small>{c.modalArabicHint}</small><ArrowUpRight size={19} /></button><button onClick={() => selectLanguage("en")} className="language-card"><span className="language-code">EN</span><strong>{c.modalEnglish}</strong><small>{c.modalEnglishHint}</small><ArrowUpRight size={19} /></button></div><div className="language-modal-foot"><img src={images.mark} alt="PPF Paint Protection Film logo" /> <span>PPFSTUDIO / 2026</span></div></DialogContent>
       </Dialog>
     </div>
   );

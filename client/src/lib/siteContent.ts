@@ -1,5 +1,7 @@
 export type Language = "en" | "ar";
 
+export const BRAND_NAME = "PPFStudio";
+
 export const WHATSAPP_NUMBER = "966556143034";
 export const WHATSAPP_DISPLAY = "+966 55 614 3034";
 export const WHATSAPP_MESSAGES: Record<Language, string> = {
@@ -43,7 +45,7 @@ export const translations = {
       ["Contact", "contact"],
     ],
     navCta: "WhatsApp",
-    heroEyebrow: "AURELIS / AUTOMOTIVE PROTECTION ATELIER",
+    heroEyebrow: "PPFSTUDIO / AUTOMOTIVE PROTECTION ATELIER",
     heroTitle: "Protect your paint. Preserve its beauty.",
     heroBody: "Advanced paint protection using premium PPF films, professionally installed to protect your vehicle while preserving its original appearance.",
     viewWork: "View our work",
@@ -109,7 +111,7 @@ export const translations = {
     footerDescription: "Professional automotive protection for the finish worth keeping.",
     footerLinks: "Explore",
     footerContact: "Contact",
-    footerCopyright: "© 2026 AURELIS. All rights reserved.",
+    footerCopyright: "© 2026 PPFStudio. All rights reserved.",
     floatingWhatsapp: "Chat with us on WhatsApp",
     close: "Close",
     previous: "Previous image",
@@ -141,7 +143,7 @@ export const translations = {
       ["تواصل معنا", "contact"],
     ],
     navCta: "واتساب",
-    heroEyebrow: "AURELIS / استوديو حماية السيارات",
+    heroEyebrow: "PPFSTUDIO / استوديو حماية السيارات",
     heroTitle: "احمِ جمال سيارتك. وحافظ على قيمتها.",
     heroBody: "حماية متقدمة للطلاء باستخدام أفلام حماية عالية الجودة، مع تركيب احترافي يمنح سيارتك حماية ومظهراً استثنائياً.",
     viewWork: "شاهد أعمالنا",
@@ -207,7 +209,7 @@ export const translations = {
     footerDescription: "حماية احترافية للسيارات التي تستحق الحفاظ على مظهرها.",
     footerLinks: "استكشف",
     footerContact: "تواصل معنا",
-    footerCopyright: "© 2026 AURELIS. جميع الحقوق محفوظة.",
+    footerCopyright: "© 2026 PPFStudio. جميع الحقوق محفوظة.",
     floatingWhatsapp: "تواصل معنا عبر واتساب",
     close: "إغلاق",
     previous: "الصورة السابقة",

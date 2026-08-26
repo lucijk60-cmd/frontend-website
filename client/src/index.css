@@ -103,7 +103,9 @@ img { display: block; max-width: 100%; }
 .brand-lockup { display: inline-flex; align-items: center; gap: 12px; }
 .brand-lockup--compact .brand-mark { width: 42px; height: 42px; }
 .brand-mark { width: 46px; height: 46px; object-fit: contain; filter: drop-shadow(0 0 15px rgba(200,165,107,.22)); }
-.brand-wordmark { font-size: 16px; font-weight: 700; letter-spacing: .29em; line-height: 1; }
+.brand-wordmark { display: inline-flex; align-items: baseline; gap: 3px; color: var(--white); font-family: "Manrope", sans-serif; font-size: 16px; font-weight: 800; letter-spacing: .19em; line-height: 1; text-transform: uppercase; }
+.brand-wordmark b { color: var(--gold-light); font-weight: 800; }
+.brand-wordmark i { color: var(--white); font-family: "DM Serif Display", serif; font-size: 1.08em; font-style: normal; font-weight: 400; letter-spacing: .02em; text-transform: none; }
 .desktop-nav { display: flex; align-items: center; justify-content: center; gap: clamp(15px, 2vw, 30px); margin-inline: auto; }
 .desktop-nav button, .language-switcher button, .footer-column button, .footer-bottom button { padding: 0; border: 0; background: none; cursor: pointer; }
 .desktop-nav button { color: rgba(244,242,237,.7); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; transition: color 180ms ease; white-space: nowrap; }
@@ -365,6 +367,7 @@ body:not(.no-reveal) .reveal { animation: reveal-in 650ms var(--ease-out) forwar
 
 [dir="rtl"] body, [dir="rtl"] .site-shell { font-family: "Cairo", sans-serif; }
 [dir="rtl"] .brand-wordmark, [dir="rtl"] .eyebrow, [dir="rtl"] .language-switcher, [dir="rtl"] .button, [dir="rtl"] .filter-row, [dir="rtl"] .stat-label, [dir="rtl"] .footer-bottom, [dir="rtl"] .footer-label { letter-spacing: 0; }
+[dir="rtl"] .brand-wordmark { direction: ltr; }
 [dir="rtl"] .brand-wordmark { font-family: "Manrope", sans-serif; direction: ltr; }
 [dir="rtl"] .hero-copy, [dir="rtl"] .section-heading, [dir="rtl"] .section-aside-note, [dir="rtl"] .manifesto-copy, [dir="rtl"] .quality-content, [dir="rtl"] .closing-content { text-align: right; }
 [dir="rtl"] .hero-copy h1, [dir="rtl"] .section-heading h2, [dir="rtl"] .manifesto-copy h2, [dir="rtl"] .closing-content h2 { letter-spacing: 0; line-height: 1.13; }
@@ -423,7 +426,8 @@ body:not(.no-reveal) .reveal { animation: reveal-in 650ms var(--ease-out) forwar
   .page-width, .nav-inner { width: calc(100% - 30px); }
   .site-nav { padding: 16px 0; }
   .brand-mark { width: 42px; height: 42px; }
-  .brand-wordmark { font-size: 14px; }
+  .brand-wordmark { font-size: 14px; letter-spacing: .13em; }
+  .brand-wordmark i { font-size: 1.02em; }
   .hero-section { min-height: 740px; }
   .hero-content { min-height: 740px; padding-top: 135px; padding-bottom: 82px; }
   .hero-copy h1 { margin-top: 17px; font-size: clamp(3.35rem, 16vw, 5rem); }
