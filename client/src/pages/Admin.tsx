@@ -51,6 +51,7 @@ const copy = {
     uploadingEnglish: "Uploading English asset…",
     uploadingArabic: "Uploading Arabic asset…",
     saved: "Both language assets saved successfully.",
+    uploadError: "Upload failed. Check the file type, size, and connection, then try again.",
     pairRequired: "Select both English and Arabic files before uploading.",
     invalid: "Please complete the title and select both language files.",
     success: "Media uploaded successfully.",
@@ -98,6 +99,7 @@ const copy = {
     uploadingEnglish: "جارٍ رفع الملف الإنجليزي…",
     uploadingArabic: "جارٍ رفع الملف العربي…",
     saved: "تم حفظ ملفي اللغتين بنجاح.",
+    uploadError: "تعذر الرفع. تحقق من نوع الملف وحجمه والاتصال ثم حاول مرة أخرى.",
     pairRequired: "اختر الملفين الإنجليزي والعربي قبل الرفع.",
     invalid: "يرجى إدخال العنوان واختيار ملفي اللغتين.",
     success: "تم رفع الوسائط بنجاح.",
@@ -131,7 +133,7 @@ export default function Admin() {
   const [englishFile, setEnglishFile] = useState<SelectedAsset>(null);
   const [arabicFile, setArabicFile] = useState<SelectedAsset>(null);
   const [publish, setPublish] = useState(true);
-  const [uploadStage, setUploadStage] = useState<"idle" | "english" | "arabic" | "saved">("idle");
+  const [uploadStage, setUploadStage] = useState<"idle" | "english" | "arabic" | "saved" | "error">("idle");
   const [editingItem, setEditingItem] = useState<AdminMediaItem | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [replaceFile, setReplaceFile] = useState<File | null>(null);
@@ -247,7 +249,7 @@ export default function Admin() {
       toast.success(c.saved);
       void mediaQuery.refetch();
     } catch {
-      setUploadStage("idle");
+      setUploadStage("error");
       toast.error(language === "ar" ? "تعذر رفع الملفين. تحقق من النوع والحجم وحاول مرة أخرى." : "Upload failed. Check both file types and sizes, then try again.");
     }
   };
@@ -295,11 +297,12 @@ export default function Admin() {
             ))}
           </div>
           <label className="admin-check"><input type="checkbox" checked={publish} onChange={event => setPublish(event.target.checked)} /><span>{c.publishNow}</span></label>
-          {uploadStage !== "idle" && <div className="admin-upload-status" aria-live="polite">{uploadStage === "english" ? c.uploadingEnglish : uploadStage === "arabic" ? c.uploadingArabic : c.saved}</div>}
+          {uploadStage !== "idle" && <div className={`admin-upload-status ${uploadStage === "error" ? "admin-upload-status--error" : ""}`} aria-live="polite">{uploadStage === "english" ? c.uploadingEnglish : uploadStage === "arabic" ? c.uploadingArabic : uploadStage === "error" ? c.uploadError : c.saved}</div>}
           <Button type="submit" className="admin-submit" disabled={uploadMedia.isPending || !canSubmit}><Upload size={16} /> {uploadMedia.isPending ? "…" : c.upload}</Button>
         </form>
           <section className="admin-library-card">
             <div className="admin-card-heading"><span className="admin-index">02</span><h2>{c.library}</h2></div>
+            {mediaQuery.error && <div className="admin-upload-status admin-upload-status--error" role="alert">{language === "ar" ? "تعذر تحميل مكتبة الوسائط. حدّث الصفحة بعد تسجيل الدخول." : "The media library could not be loaded. Refresh after signing in."}</div>}
             {editingItem && <form className="admin-edit-panel" onSubmit={submitEdit}>
               <div className="admin-edit-heading"><strong>{editingItem.language.toUpperCase()} · {editingItem.kind.toUpperCase()}</strong><button type="button" onClick={() => { setEditingItem(null); setReplaceFile(null); }}>{c.cancel}</button></div>
               <div className="admin-field"><Label htmlFor="edit-asset-title">{c.titleLabel}</Label><Input id="edit-asset-title" value={editTitle} onChange={event => setEditTitle(event.target.value)} maxLength={180} /></div>

@@ -42,6 +42,8 @@ function sanitizeFileName(fileName: string) {
   return fileName.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-120) || "upload";
 }
 
+export const MAX_BASE64_UPLOAD_CHARS = 72_000_000;
+
 const uploadInput = z.object({
   kind: z.enum(["image", "video"]),
   language: z.enum(["en", "ar", "shared"]),
@@ -49,14 +51,14 @@ const uploadInput = z.object({
   title: z.string().trim().min(2).max(180),
   fileName: z.string().min(1).max(180).regex(/^[^\\/\\\\]+\\.[a-zA-Z0-9]{2,5}$/, "A valid file extension is required."),
   mimeType: z.string().min(3).max(120),
-  dataBase64: z.string().min(20).max(42_000_000),
+  dataBase64: z.string().min(20).max(MAX_BASE64_UPLOAD_CHARS),
   publish: z.boolean().default(false),
 });
 
 const pairedAssetInput = z.object({
   fileName: z.string().min(1).max(180).regex(/^[^\\/\\\\]+\\.[a-zA-Z0-9]{2,5}$/, "A valid file extension is required."),
   mimeType: z.string().min(3).max(120),
-  dataBase64: z.string().min(20).max(42_000_000),
+  dataBase64: z.string().min(20).max(MAX_BASE64_UPLOAD_CHARS),
 });
 
 const pairedUploadInput = z.object({
@@ -165,7 +167,7 @@ export const appRouter = router({
         id: z.number().int().positive(),
         fileName: z.string().min(1).max(180).regex(/^[^\\/\\\\]+\\.[a-zA-Z0-9]{2,5}$/, "A valid file extension is required."),
         mimeType: z.string().min(3).max(120),
-        dataBase64: z.string().min(20).max(42_000_000),
+        dataBase64: z.string().min(20).max(MAX_BASE64_UPLOAD_CHARS),
       })).mutation(async ({ input }) => {
         const existing = await getAdminMediaById(input.id);
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Media asset not found." });

@@ -101,3 +101,12 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Ensure edited/replaced published media refreshes on the public site for the active language.
 - [x] Add regression tests for replacement validation, pair preservation, and public retrieval selection.
 - [x] Run type-check, tests, production build, responsive verification, and save a final checkpoint.
+
+## Upload Failure Investigation
+
+- [x] Reproduce the reported inability to select or upload image/video files and inspect browser/server/network logs.
+- [x] Trace file input state, form validation, tRPC payload size, storagePut response, database insert, and public media query.
+- [x] Fix the upload transport or storage/database failure without weakening admin protection.
+- [x] Add clear inline error and progress states for selection, validation, upload, save, and public refresh.
+- [x] Add regression coverage for the corrected upload flow and large-file safeguards.
+- [x] Verify the corrected implementation with admin/public route checks, type-check/tests/build, and save a checkpoint; owner credentialed upload smoke test remains recommended.

@@ -32,8 +32,9 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  // Base64 adds roughly one third overhead; allow a raw 50 MB video plus JSON envelope.
+  app.use(express.json({ limit: "100mb" }));
+  app.use(express.urlencoded({ limit: "100mb", extended: true, parameterLimit: 100000 }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   // tRPC API

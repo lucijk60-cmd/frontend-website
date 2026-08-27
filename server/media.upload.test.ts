@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateUpload } from "./routers";
+import { MAX_BASE64_UPLOAD_CHARS, validateUpload } from "./routers";
 
 describe("admin media upload validation", () => {
   const base = {
@@ -12,6 +12,10 @@ describe("admin media upload validation", () => {
   it("accepts supported paired image assets under the image limit", () => {
     expect(() => validateUpload({ ...base, kind: "image", language: "en", fileName: "english.webp", mimeType: "image/webp" }, 1024 * 1024)).not.toThrow();
     expect(() => validateUpload({ ...base, kind: "image", language: "ar", fileName: "arabic.webp", mimeType: "image/webp" }, 1024 * 1024)).not.toThrow();
+  });
+
+  it("keeps enough encoded payload room for a 50 MB raw video", () => {
+    expect(MAX_BASE64_UPLOAD_CHARS).toBeGreaterThanOrEqual(Math.ceil(50 * 1024 * 1024 * 4 / 3));
   });
 
   it("accepts supported video assets and rejects invalid type or size", () => {

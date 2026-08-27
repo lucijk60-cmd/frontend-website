@@ -609,6 +609,7 @@ body:not(.no-reveal) .reveal { animation: reveal-in 650ms var(--ease-out) forwar
 .admin-clear-file { padding: 5px 8px; border: 1px solid rgba(217,185,121,.42); background: transparent; color: #d9b979; cursor: pointer; font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
 .admin-clear-file:hover { border-color: #f0d399; color: #f0d399; }
 .admin-upload-status { margin: 0 0 14px; padding: 10px 12px; border-left: 2px solid #d9b979; background: rgba(217,185,121,.08); color: #d9b979; font-size: 11px; letter-spacing: .05em; }
+.admin-upload-status--error { border-left-color: #e98282; background: rgba(233,130,130,.08); color: #f0a5a5; }
 .admin-pair-dropzone input { display: none; }
 .admin-check { display: flex; align-items: center; gap: 9px; margin: 0 0 20px; color: #a7a59c; font-size: 12px; }
 .admin-submit { width: 100%; min-height: 46px; border: 1px solid #d9b979; border-radius: 0; background: #d9b979; color: #11120f; text-transform: uppercase; letter-spacing: .08em; }
