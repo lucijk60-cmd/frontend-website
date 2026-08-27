@@ -1,10 +1,10 @@
 # Image Localization Update
 
-## Arabic and English Website Images
+## Additional Arabic and English Images
 
-- [x] Prepare the two provided English image assets for web use.
-- [x] Create Arabic localized versions while preserving the original visuals and layout.
-- [x] Add English and Arabic image mappings to centralized content configuration.
-- [x] Render the correct image based on the selected language.
+- [x] Prepare the two newly provided English images for web use.
+- [x] Create faithful Arabic localized variants with preserved visuals and layout.
+- [x] Add the new bilingual image mappings to centralized configuration.
+- [x] Show the correct variant for the selected language in the gallery.
 - [x] Verify desktop/mobile presentation and run the production build.
 - [x] Save and deliver the updated checkpoint.
