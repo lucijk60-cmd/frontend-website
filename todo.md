@@ -91,3 +91,13 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Make selected image/video state visually obvious before upload.
 - [x] Diagnose why uploaded media is not appearing publicly and fix the rendering path.
 - [x] Verify the final upload-to-public-language-switch implementation path; owner credentialed smoke test remains recommended without exposing private credentials.
+
+## Existing Media Edit and Replace
+
+- [x] Audit existing admin media fields, pairKey relationships, update procedures, and library action patterns.
+- [x] Add secure backend procedures to edit media metadata/status and replace stored media bytes while preserving language and pair relationships.
+- [x] Add admin Edit controls for title/status and Replace controls for image/video files with visible previews and validation.
+- [x] Support replacing English or Arabic assets independently without breaking the paired asset mapping.
+- [x] Ensure edited/replaced published media refreshes on the public site for the active language.
+- [x] Add regression tests for replacement validation, pair preservation, and public retrieval selection.
+- [x] Run type-check, tests, production build, responsive verification, and save a final checkpoint.

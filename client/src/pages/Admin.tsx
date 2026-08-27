@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Check, FileImage, Film, LockKeyhole, LogOut, Upload, X } from "lucide-react";
+import { ArrowLeft, Check, FileImage, Film, LockKeyhole, LogOut, Pencil, RefreshCw, Upload, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ type UploadKind = "image" | "video";
 type UploadLanguage = "en" | "ar" | "shared";
 
 type SelectedAsset = File | null;
+type AdminMediaItem = { id: number; title: string; kind: "image" | "video"; language: "en" | "ar" | "shared"; status: "draft" | "published"; pairKey: string | null; url: string; mimeType: string; sizeBytes: number };
 
 const copy = {
   en: {
@@ -53,7 +54,13 @@ const copy = {
     pairRequired: "Select both English and Arabic files before uploading.",
     invalid: "Please complete the title and select both language files.",
     success: "Media uploaded successfully.",
-    statusUpdated: "Media status updated.",
+    statusUpdated: "Status updated.",
+    edit: "Edit details",
+    replace: "Replace file",
+    saveChanges: "Save changes",
+    cancel: "Cancel",
+    replacement: "Choose replacement file",
+
   },
   ar: {
     eyebrow: "PPFSTUDIO / غرفة التحكم الخاصة",
@@ -95,6 +102,12 @@ const copy = {
     invalid: "يرجى إدخال العنوان واختيار ملفي اللغتين.",
     success: "تم رفع الوسائط بنجاح.",
     statusUpdated: "تم تحديث حالة الوسائط.",
+    edit: "تعديل البيانات",
+    replace: "استبدال الملف",
+    saveChanges: "حفظ التغييرات",
+    cancel: "إلغاء",
+    replacement: "اختر ملفاً بديلاً",
+
   },
 } as const;
 
@@ -119,6 +132,13 @@ export default function Admin() {
   const [arabicFile, setArabicFile] = useState<SelectedAsset>(null);
   const [publish, setPublish] = useState(true);
   const [uploadStage, setUploadStage] = useState<"idle" | "english" | "arabic" | "saved">("idle");
+  const [editingItem, setEditingItem] = useState<AdminMediaItem | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [replaceFile, setReplaceFile] = useState<File | null>(null);
+  const [editStatus, setEditStatus] = useState<"draft" | "published">("draft");
+
+  const replacePreview = useMemo(() => replaceFile ? URL.createObjectURL(replaceFile) : "", [replaceFile]);
+  useEffect(() => () => { if (replacePreview) URL.revokeObjectURL(replacePreview); }, [replacePreview]);
 
   const englishPreview = useMemo(() => englishFile ? URL.createObjectURL(englishFile) : "", [englishFile]);
   const arabicPreview = useMemo(() => arabicFile ? URL.createObjectURL(arabicFile) : "", [arabicFile]);
@@ -143,6 +163,14 @@ export default function Admin() {
   const uploadMedia = trpc.admin.media.upload.useMutation({
     onError: (error) => toast.error(error.message),
   });
+  const updateMedia = trpc.admin.media.update.useMutation({
+    onSuccess: () => { toast.success(language === "ar" ? "تم تحديث بيانات الوسائط." : "Media details updated."); setEditingItem(null); void mediaQuery.refetch(); },
+    onError: (error) => toast.error(error.message),
+  });
+  const replaceMedia = trpc.admin.media.replace.useMutation({
+    onSuccess: () => { toast.success(language === "ar" ? "تم استبدال الملف بنجاح." : "Media file replaced successfully."); setEditingItem(null); setReplaceFile(null); void mediaQuery.refetch(); },
+    onError: (error) => toast.error(error.message),
+  });
   const updateStatus = trpc.admin.media.setStatus.useMutation({
     onSuccess: () => {
       toast.success(c.statusUpdated);
@@ -162,6 +190,26 @@ export default function Admin() {
   }, [mediaQuery.data]);
 
   const canSubmit = useMemo(() => Boolean(title.trim() && englishFile && arabicFile), [title, englishFile, arabicFile]);
+
+  const startEditing = (item: AdminMediaItem) => {
+    setEditingItem(item);
+    setEditTitle(item.title);
+    setEditStatus(item.status);
+    setReplaceFile(null);
+  };
+
+  const submitEdit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingItem) return;
+    if (editTitle.trim() && (editTitle.trim() !== editingItem.title || editStatus !== editingItem.status)) {
+      await updateMedia.mutateAsync({ id: editingItem.id, title: editTitle.trim(), status: editStatus });
+    }
+    if (replaceFile) {
+      const dataBase64 = await readFileAsBase64(replaceFile);
+      await replaceMedia.mutateAsync({ id: editingItem.id, fileName: replaceFile.name, mimeType: replaceFile.type, dataBase64 });
+    }
+    if (!replaceFile && editTitle.trim() === editingItem.title && editStatus === editingItem.status) setEditingItem(null);
+  };
 
   const submitGate = (event: React.FormEvent) => {
     event.preventDefault();
@@ -252,6 +300,14 @@ export default function Admin() {
         </form>
           <section className="admin-library-card">
             <div className="admin-card-heading"><span className="admin-index">02</span><h2>{c.library}</h2></div>
+            {editingItem && <form className="admin-edit-panel" onSubmit={submitEdit}>
+              <div className="admin-edit-heading"><strong>{editingItem.language.toUpperCase()} · {editingItem.kind.toUpperCase()}</strong><button type="button" onClick={() => { setEditingItem(null); setReplaceFile(null); }}>{c.cancel}</button></div>
+              <div className="admin-field"><Label htmlFor="edit-asset-title">{c.titleLabel}</Label><Input id="edit-asset-title" value={editTitle} onChange={event => setEditTitle(event.target.value)} maxLength={180} /></div>
+              <div className="admin-field"><Label>{c.statusUpdated}</Label><Select value={editStatus} onValueChange={(value: "draft" | "published") => setEditStatus(value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="published">{c.published}</SelectItem><SelectItem value="draft">{c.draft}</SelectItem></SelectContent></Select></div>
+              {replaceFile && <div className="admin-replace-preview">{editingItem.kind === "image" ? <img src={replacePreview} alt="" /> : <video src={replacePreview} muted controls preload="metadata" />}<span>{replaceFile.type} · {(replaceFile.size / 1024 / 1024).toFixed(2)} MB</span></div>}
+              <label className="admin-replace-control" htmlFor="replace-media-file"><RefreshCw size={16} /><span>{replaceFile ? replaceFile.name : c.replacement}</span><input id="replace-media-file" type="file" accept={editingItem.kind === "image" ? "image/jpeg,image/png,image/webp,image/avif" : "video/mp4,video/webm,video/quicktime"} onChange={event => setReplaceFile(event.target.files?.[0] ?? null)} /></label>
+              <div className="admin-edit-actions"><Button type="submit" disabled={updateMedia.isPending || replaceMedia.isPending || (!editTitle.trim() && !replaceFile)}>{updateMedia.isPending || replaceMedia.isPending ? "…" : c.saveChanges}</Button><button type="button" onClick={() => { setEditingItem(null); setReplaceFile(null); }}>{c.cancel}</button></div>
+            </form>}
             {mediaQuery.isLoading ? (
               <div className="admin-empty">…</div>
             ) : mediaQuery.data?.length ? (
@@ -266,9 +322,9 @@ export default function Admin() {
                       <strong>{item.title}</strong>
                       <span>{item.kind.toUpperCase()} {item.pairKey ? `· PAIR: ${item.pairKey.slice(-4)}` : ""}</span>
                       <span className={`admin-status admin-status--${item.status}`}>{item.status === "published" ? c.published : c.draft}</span>
-                      <button className="admin-status-button" onClick={() => updateStatus.mutate({ id: item.id, status: item.status === "published" ? "draft" : "published" })}>
+                      <div className="admin-item-actions"><button className="admin-status-button" onClick={() => startEditing(item)}><Pencil size={13} /> {c.edit}</button><button className="admin-status-button" onClick={() => updateStatus.mutate({ id: item.id, status: item.status === "published" ? "draft" : "published" })}>
                         {item.status === "published" ? c.unpublish : c.publish}
-                      </button>
+                      </button></div>
                     </div>
                   </article>
                 ))}

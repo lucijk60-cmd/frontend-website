@@ -154,6 +154,20 @@ export async function createAdminMediaPair(media: InsertAdminMedia[]) {
   return { count: media.length };
 }
 
+export async function getAdminMediaById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const [row] = await db.select().from(adminMedia).where(eq(adminMedia.id, id)).limit(1);
+  return row;
+}
+
+export async function updateAdminMedia(id: number, values: Partial<InsertAdminMedia>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.update(adminMedia).set(values).where(eq(adminMedia.id, id));
+  return { success: true } as const;
+}
+
 export async function getAdminMedia(limit = 100) {
   const db = await getDb();
   if (!db) return [] as AdminMedia[];

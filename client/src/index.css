@@ -574,6 +574,19 @@ body:not(.no-reveal) .reveal { animation: reveal-in 650ms var(--ease-out) forwar
 .admin-upload-card, .admin-library-card { padding: clamp(22px, 3vw, 38px); }
 .admin-card-heading { gap: 14px; border-bottom: 1px solid rgba(255,255,255,.12); padding-bottom: 18px; margin-bottom: 26px; }
 .admin-card-heading h2 { margin: 0; font-family: "DM Serif Display", Georgia, serif; font-size: 28px; font-weight: 400; }
+.admin-edit-panel { margin: -8px 0 22px; padding: 16px; border: 1px solid rgba(217,185,121,.35); background: rgba(217,185,121,.055); }
+.admin-edit-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; color: #d9b979; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+.admin-edit-heading button, .admin-edit-actions > button { border: 0; background: transparent; color: #99988f; cursor: pointer; font-size: 10px; text-transform: uppercase; }
+.admin-replace-control { min-height: 50px; margin: 8px 0 15px; padding: 10px 12px; display: flex; align-items: center; gap: 9px; border: 1px dashed rgba(217,185,121,.5); color: #d9b979; cursor: pointer; font-size: 11px; }
+.admin-replace-control span { min-width: 0; overflow: hidden; color: #f2efe8; text-overflow: ellipsis; white-space: nowrap; }
+.admin-replace-control input { display: none; }
+.admin-replace-preview { margin-bottom: 15px; padding: 12px; border: 1px solid rgba(255,255,255,.1); background: rgba(0,0,0,.2); display: flex; flex-direction: column; gap: 8px; }
+.admin-replace-preview img, .admin-replace-preview video { width: 100%; height: 120px; object-fit: cover; border: 1px solid rgba(255,255,255,.1); }
+.admin-replace-preview span { color: #8f9089; font-size: 10px; letter-spacing: .05em; }
+.admin-edit-actions { display: flex; align-items: center; gap: 16px; }
+.admin-edit-actions .button { width: auto; min-height: 38px; padding: 9px 16px; }
+.admin-item-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: auto; }
+.admin-item-actions .admin-status-button { display: inline-flex; align-items: center; gap: 5px; margin-top: 0; }
 .admin-index { color: #d9b979; font-size: 11px; letter-spacing: .18em; }
 .admin-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .admin-field { display: grid; gap: 8px; margin-bottom: 17px; }

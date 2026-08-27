@@ -6,7 +6,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, adminSessionProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { clearAdminSessionCookie, createAdminSession, setAdminSessionCookie, verifyAdminCredentials } from "./adminAuth";
-import { createAdminMedia, createAdminMediaPair, getAdminMedia, getPublishedAdminMedia, updateAdminMediaStatus } from "./db";
+import { createAdminMedia, createAdminMediaPair, getAdminMedia, getAdminMediaById, getPublishedAdminMedia, updateAdminMedia, updateAdminMediaStatus } from "./db";
 import { storagePut } from "./storage";
 import { createReview, getApprovedReviewCount, getApprovedReviews, getPendingReviews, hasDuplicateReview, updateReviewStatus } from "./db";
 
@@ -151,6 +151,31 @@ export const appRouter = router({
           status: input.publish ? "published" : "draft",
         });
         return { ...result, url: stored.url };
+      }),
+      update: adminSessionProcedure.input(z.object({
+        id: z.number().int().positive(),
+        title: z.string().trim().min(2).max(180).optional(),
+        status: z.enum(["draft", "published"]).optional(),
+      })).mutation(async ({ input }) => {
+        const existing = await getAdminMediaById(input.id);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Media asset not found." });
+        return updateAdminMedia(input.id, { ...(input.title !== undefined ? { title: input.title } : {}), ...(input.status !== undefined ? { status: input.status } : {}) });
+      }),
+      replace: adminSessionProcedure.input(z.object({
+        id: z.number().int().positive(),
+        fileName: z.string().min(1).max(180).regex(/^[^\\/\\\\]+\\.[a-zA-Z0-9]{2,5}$/, "A valid file extension is required."),
+        mimeType: z.string().min(3).max(120),
+        dataBase64: z.string().min(20).max(42_000_000),
+      })).mutation(async ({ input }) => {
+        const existing = await getAdminMediaById(input.id);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Media asset not found." });
+        const replacement = { ...existing, pairKey: existing.pairKey ?? undefined, fileName: input.fileName, mimeType: input.mimeType, dataBase64: input.dataBase64, publish: existing.status === "published" };
+        const buffer = Buffer.from(input.dataBase64, "base64");
+        validateUpload(replacement, buffer.byteLength);
+        const storagePath = `admin-media/${existing.kind}/${existing.language}/${existing.pairKey ? `${existing.pairKey}-` : ""}${Date.now()}-${sanitizeFileName(input.fileName)}`;
+        const stored = await storagePut(storagePath, buffer, input.mimeType);
+        await updateAdminMedia(input.id, { storageKey: stored.key, url: stored.url, mimeType: input.mimeType, sizeBytes: buffer.byteLength });
+        return { success: true, url: stored.url } as const;
       }),
       setStatus: adminSessionProcedure.input(z.object({
         id: z.number().int().positive(),
