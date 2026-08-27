@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertReview, InsertUser, reviews, users } from "../drizzle/schema";
+import { AdminMedia, InsertAdminMedia, InsertReview, InsertUser, adminMedia, reviews, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -136,5 +136,31 @@ export async function updateReviewStatus(id: number, status: "approved" | "rejec
   const db = await getDb();
   if (!db) throw new Error("Database is not available");
   await db.update(reviews).set({ status, moderatedAt: new Date(), moderatedBy }).where(eq(reviews.id, id));
+  return { success: true } as const;
+}
+
+export async function createAdminMedia(media: InsertAdminMedia) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const [result] = await db.insert(adminMedia).values(media);
+  return { id: result.insertId };
+}
+
+export async function getAdminMedia(limit = 100) {
+  const db = await getDb();
+  if (!db) return [] as AdminMedia[];
+  return db.select().from(adminMedia).orderBy(desc(adminMedia.createdAt)).limit(limit);
+}
+
+export async function getPublishedAdminMedia(limit = 100) {
+  const db = await getDb();
+  if (!db) return [] as AdminMedia[];
+  return db.select().from(adminMedia).where(eq(adminMedia.status, "published")).orderBy(desc(adminMedia.createdAt)).limit(limit);
+}
+
+export async function updateAdminMediaStatus(id: number, status: "draft" | "published") {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.update(adminMedia).set({ status }).where(eq(adminMedia.id, id));
   return { success: true } as const;
 }

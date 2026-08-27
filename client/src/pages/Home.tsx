@@ -13,6 +13,7 @@ import {
   Ghost,
   Instagram,
   Menu,
+  LockKeyhole,
   Music2,
   MessageCircle,
   MoveHorizontal,
@@ -131,6 +132,7 @@ export default function Home() {
   const { user } = useAuth();
   const trpcUtils = trpc.useUtils();
   const reviewsQuery = trpc.reviews.list.useQuery({ limit: 24, offset: 0 });
+  const publishedMediaQuery = trpc.admin.media.published.useQuery();
   const pendingReviewsQuery = trpc.reviews.pending.useQuery(undefined, { enabled: user?.role === "admin" });
   const moderateReview = trpc.reviews.moderate.useMutation({
     onSuccess: async () => {
@@ -200,7 +202,19 @@ export default function Home() {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const localizedGalleryItems = useMemo(() => galleryItems.map((item) => isArabic && "arSrc" in item ? { ...item, src: item.arSrc, alt: item.arAlt } : item), [isArabic]);
+  const localizedGalleryItems = useMemo(() => {
+    const staticItems = galleryItems.map((item) => isArabic && "arSrc" in item ? { ...item, src: item.arSrc, alt: item.arAlt } : item);
+    const uploadedItems = (publishedMediaQuery.data ?? [])
+      .filter((item) => item.kind === "image" && (item.language === "shared" || item.language === language))
+      .map((item) => ({ id: 10000 + item.id, category: "Admin Uploads", src: item.url, alt: item.title }));
+    return [...staticItems, ...uploadedItems];
+  }, [isArabic, language, publishedMediaQuery.data]);
+  const videoDisplayItems = useMemo(() => {
+    const uploadedVideos = (publishedMediaQuery.data ?? [])
+      .filter((item) => item.kind === "video" && (item.language === "shared" || item.language === language))
+      .map((item) => ({ title: item.title, src: item.url }));
+    return [...videoItems, ...uploadedVideos];
+  }, [language, publishedMediaQuery.data]);
   const filteredGallery = useMemo(() => {
     if (activeFilter === 0) return localizedGalleryItems;
     return localizedGalleryItems.filter((item) => item.category === galleryFilterKeys[activeFilter]);
@@ -255,6 +269,7 @@ export default function Home() {
             {c.nav.map(([label, id]) => (
               <button key={id} onClick={() => scrollToSection(id)}>{label}<ArrowUpRight size={17} /></button>
             ))}
+            <button className="mobile-admin-link" onClick={() => { setMobileMenuOpen(false); window.location.href = "/admin"; }}><span><LockKeyhole size={16} />{isArabic ? "الإدارة" : "Admin"}</span><ArrowUpRight size={17} /></button>
           </div>
           <div className="mobile-sheet-footer">
             <div className="mobile-language-row">
@@ -345,7 +360,7 @@ export default function Home() {
         </section>
 
         <section className="section video-section">
-          <div className="page-width"><Reveal><SectionHeader eyebrow={c.videoEyebrow} title={c.videoTitle} body={c.videoBody} /></Reveal><div className="video-grid">{videoItems.map((item, index) => <Reveal key={item.title} delay={index * 55} className="video-card"><button onClick={() => setVideoIndex(index)} aria-label={`${c.playVideo}: ${c.videoCategories[index]}`}><img src={item.src} alt="" loading="lazy" /><span className="video-shade" /><span className="video-play"><CirclePlay size={42} strokeWidth={1.2} /></span><span className="video-label"><span>0{index + 1}</span>{c.videoCategories[index]}</span></button></Reveal>)}</div></div>
+          <div className="page-width"><Reveal><SectionHeader eyebrow={c.videoEyebrow} title={c.videoTitle} body={c.videoBody} /></Reveal><div className="video-grid">{videoDisplayItems.map((item, index) => <Reveal key={`${item.title}-${index}`} delay={index * 55} className="video-card"><button onClick={() => setVideoIndex(index)} aria-label={`${c.playVideo}: ${item.title}`}><img src={item.src} alt="" loading="lazy" /><span className="video-shade" /><span className="video-play"><CirclePlay size={42} strokeWidth={1.2} /></span><span className="video-label"><span>0{index + 1}</span>{item.title}</span></button></Reveal>)}</div></div>
         </section>
 
         <section id="process" className="section process-section page-width">
@@ -375,16 +390,16 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="site-footer"><div className="page-width footer-grid"><div><BrandMark /><p>{c.footerDescription}</p></div><div className="footer-column"><span className="footer-label">{c.footerLinks}</span>{c.nav.slice(0, 5).map(([label, id]) => <button key={id} onClick={() => scrollToSection(id)}>{label}</button>)}</div><div className="footer-column"><span className="footer-label">{c.footerContact}</span><WhatsAppLink language={language}>{WHATSAPP_DISPLAY}</WhatsAppLink><div className="social-links" aria-label="PPFStudio social profiles"><a className="social-link" href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on Instagram"><Instagram size={16} /> <span>Instagram</span></a><a className="social-link" href={SNAPCHAT_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on Snapchat"><Ghost size={16} /> <span>Snapchat</span></a><a className="social-link" href={TIKTOK_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on TikTok"><Music2 size={16} /> <span>TikTok</span></a></div></div></div><div className="page-width footer-bottom"><span>{c.footerCopyright}</span><button onClick={openLanguageModal}>{language === "ar" ? "English" : "العربية"}</button></div></footer>
+      <footer className="site-footer"><div className="page-width footer-grid"><div><BrandMark /><p>{c.footerDescription}</p></div><div className="footer-column"><span className="footer-label">{c.footerLinks}</span>{c.nav.slice(0, 5).map(([label, id]) => <button key={id} onClick={() => scrollToSection(id)}>{label}</button>)}</div><div className="footer-column"><span className="footer-label">{c.footerContact}</span><WhatsAppLink language={language}>{WHATSAPP_DISPLAY}</WhatsAppLink><div className="social-links" aria-label="PPFStudio social profiles"><a className="social-link" href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on Instagram"><Instagram size={16} /> <span>Instagram</span></a><a className="social-link" href={SNAPCHAT_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on Snapchat"><Ghost size={16} /> <span>Snapchat</span></a><a className="social-link" href={TIKTOK_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on TikTok"><Music2 size={16} /> <span>TikTok</span></a><a className="social-link social-link--admin" href="/admin" aria-label="Open PPFStudio Admin panel"><ShieldCheck size={16} /> <span>Admin</span></a></div></div></div><div className="page-width footer-bottom"><span>{c.footerCopyright}</span><button onClick={openLanguageModal}>{language === "ar" ? "English" : "العربية"}</button></div></footer>
 
       <a href={whatsappHref(language)} target="_blank" rel="noreferrer" className="floating-whatsapp" aria-label={language === "ar" ? "التواصل معنا عبر واتساب" : "Chat with us on WhatsApp"}><MessageCircle size={23} /><span>{c.floatingWhatsapp}</span></a>
 
       <Dialog open={lightboxIndex !== null} onOpenChange={(open) => !open && setLightboxIndex(null)}>
-        <DialogContent className="lightbox-dialog"><DialogTitle className="sr-only">{activeLightboxItem?.alt}</DialogTitle><DialogDescription className="sr-only">{c.openImage}</DialogDescription>{activeLightboxItem && <div className="lightbox-inner"><img src={activeLightboxItem.src} alt={activeLightboxItem.alt} /><div className="lightbox-toolbar"><span>0{activeLightboxItem.id} / 0{galleryItems.length}</span><div><button onClick={() => setLightboxIndex((lightboxIndex! - 1 + galleryItems.length) % galleryItems.length)} aria-label={c.previous}><ChevronLeft /></button><button onClick={() => setLightboxIndex((lightboxIndex! + 1) % galleryItems.length)} aria-label={c.next}><ChevronRight /></button><button onClick={() => setLightboxIndex(null)} aria-label={c.close}><X /></button></div></div></div>}</DialogContent>
+        <DialogContent className="lightbox-dialog"><DialogTitle className="sr-only">{activeLightboxItem?.alt}</DialogTitle><DialogDescription className="sr-only">{c.openImage}</DialogDescription>{activeLightboxItem && <div className="lightbox-inner"><img src={activeLightboxItem.src} alt={activeLightboxItem.alt} /><div className="lightbox-toolbar"><span>{activeLightboxItem.id} / {localizedGalleryItems.length}</span><div><button onClick={() => setLightboxIndex((lightboxIndex! - 1 + localizedGalleryItems.length) % localizedGalleryItems.length)} aria-label={c.previous}><ChevronLeft /></button><button onClick={() => setLightboxIndex((lightboxIndex! + 1) % localizedGalleryItems.length)} aria-label={c.next}><ChevronRight /></button><button onClick={() => setLightboxIndex(null)} aria-label={c.close}><X /></button></div></div></div>}</DialogContent>
       </Dialog>
 
       <Dialog open={videoIndex !== null} onOpenChange={(open) => !open && setVideoIndex(null)}>
-        <DialogContent className="video-dialog"><DialogTitle className="sr-only">{videoIndex === null ? "" : c.videoCategories[videoIndex]}</DialogTitle><DialogDescription className="sr-only">{c.playVideo}</DialogDescription>{videoIndex !== null && <div className="video-modal-inner"><video src={VIDEO_SOURCE} controls autoPlay playsInline poster={videoItems[videoIndex].src} /></div>}</DialogContent>
+        <DialogContent className="video-dialog"><DialogTitle className="sr-only">{videoIndex === null ? "" : c.videoCategories[videoIndex]}</DialogTitle><DialogDescription className="sr-only">{c.playVideo}</DialogDescription>{videoIndex !== null && <div className="video-modal-inner"><video src={videoDisplayItems[videoIndex].src.startsWith("http") ? videoDisplayItems[videoIndex].src : VIDEO_SOURCE} controls autoPlay playsInline poster={videoDisplayItems[videoIndex].src} /></div>}</DialogContent>
       </Dialog>
 
       <Dialog open={reviewsOpen} onOpenChange={setReviewsOpen}>

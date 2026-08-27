@@ -2,8 +2,68 @@ import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { adminProcedure, publicProcedure, router } from "./_core/trpc";
+import { adminProcedure, adminSessionProcedure, publicProcedure, router } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
+import { clearAdminSessionCookie, createAdminSession, setAdminSessionCookie, verifyAdminCredentials } from "./adminAuth";
+import { createAdminMedia, getAdminMedia, getPublishedAdminMedia, updateAdminMediaStatus } from "./db";
+import { storagePut } from "./storage";
 import { createReview, getApprovedReviewCount, getApprovedReviews, getPendingReviews, hasDuplicateReview, updateReviewStatus } from "./db";
+
+const gateAttempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_GATE_ATTEMPTS = 5;
+const GATE_WINDOW_MS = 10 * 60 * 1000;
+
+function getRequestKey(req: { ip?: string; headers: Record<string, string | string[] | undefined> }) {
+  const forwarded = req.headers?.["x-forwarded-for"];
+  return (Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0])?.trim() || req.ip || "unknown";
+}
+
+function assertGateRateLimit(req: { ip?: string; headers: Record<string, string | string[] | undefined> }) {
+  const now = Date.now();
+  const key = getRequestKey(req);
+  const previous = gateAttempts.get(key);
+  if (!previous || previous.resetAt <= now) {
+    gateAttempts.set(key, { count: 0, resetAt: now + GATE_WINDOW_MS });
+    return;
+  }
+  if (previous.count >= MAX_GATE_ATTEMPTS) {
+    throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many attempts. Please try again later." });
+  }
+}
+
+function registerGateFailure(req: { ip?: string; headers: Record<string, string | string[] | undefined> }) {
+  const key = getRequestKey(req);
+  const current = gateAttempts.get(key) ?? { count: 0, resetAt: Date.now() + GATE_WINDOW_MS };
+  gateAttempts.set(key, { ...current, count: current.count + 1 });
+}
+
+function sanitizeFileName(fileName: string) {
+  return fileName.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-120) || "upload";
+}
+
+const uploadInput = z.object({
+  kind: z.enum(["image", "video"]),
+  language: z.enum(["en", "ar", "shared"]),
+  title: z.string().trim().min(2).max(180),
+  fileName: z.string().min(1).max(180).regex(/^[^\\/\\\\]+\\.[a-zA-Z0-9]{2,5}$/, "A valid file extension is required."),
+  mimeType: z.string().min(3).max(120),
+  dataBase64: z.string().min(20).max(42_000_000),
+  publish: z.boolean().default(false),
+});
+
+function validateUpload(input: z.infer<typeof uploadInput>, byteLength: number) {
+  const imageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
+  const videoTypes = new Set(["video/mp4", "video/webm", "video/quicktime"]);
+  const extension = input.fileName.split(".").pop()?.toLowerCase();
+  const imageExtensions = new Set(["jpg", "jpeg", "png", "webp", "avif"]);
+  const videoExtensions = new Set(["mp4", "webm", "mov"]);
+  const validExtension = input.kind === "image" ? imageExtensions.has(extension ?? "") : videoExtensions.has(extension ?? "");
+  const validType = input.kind === "image" ? imageTypes.has(input.mimeType) : videoTypes.has(input.mimeType);
+  const maxBytes = input.kind === "image" ? 10 * 1024 * 1024 : 50 * 1024 * 1024;
+  if (!validType || !validExtension || byteLength > maxBytes) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: input.kind === "image" ? "Use a supported image under 10 MB." : "Use an MP4, WebM, or MOV video under 50 MB." });
+  }
+}
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -16,6 +76,54 @@ export const appRouter = router({
       return {
         success: true,
       } as const;
+    }),
+  }),
+
+  admin: router({
+    verifyGate: publicProcedure.input(z.object({
+      password: z.string().min(1).max(200),
+      ppfPassword: z.string().min(1).max(200),
+      adminPassword: z.string().min(1).max(200),
+      privatePassword: z.string().min(1).max(200),
+    })).mutation(async ({ input, ctx }) => {
+      assertGateRateLimit(ctx.req);
+      if (!verifyAdminCredentials(input)) {
+        registerGateFailure(ctx.req);
+        throw new TRPCError({ code: "FORBIDDEN", message: "The four passwords do not match." });
+      }
+      gateAttempts.delete(getRequestKey(ctx.req));
+      const token = await createAdminSession();
+      setAdminSessionCookie(ctx.req, ctx.res, token);
+      return { success: true } as const;
+    }),
+    logout: publicProcedure.mutation(({ ctx }) => {
+      clearAdminSessionCookie(ctx.req, ctx.res);
+      return { success: true } as const;
+    }),
+    media: router({
+      published: publicProcedure.query(() => getPublishedAdminMedia()),
+      list: adminSessionProcedure.query(() => getAdminMedia()),
+      upload: adminSessionProcedure.input(uploadInput).mutation(async ({ input }) => {
+        const buffer = Buffer.from(input.dataBase64, "base64");
+        validateUpload(input, buffer.byteLength);
+        const storagePath = `admin-media/${input.kind}/${input.language}/${Date.now()}-${sanitizeFileName(input.fileName)}`;
+        const stored = await storagePut(storagePath, buffer, input.mimeType);
+        const result = await createAdminMedia({
+          kind: input.kind,
+          language: input.language,
+          title: input.title,
+          storageKey: stored.key,
+          url: stored.url,
+          mimeType: input.mimeType,
+          sizeBytes: buffer.byteLength,
+          status: input.publish ? "published" : "draft",
+        });
+        return { ...result, url: stored.url };
+      }),
+      setStatus: adminSessionProcedure.input(z.object({
+        id: z.number().int().positive(),
+        status: z.enum(["draft", "published"]),
+      })).mutation(({ input }) => updateAdminMediaStatus(input.id, input.status)),
     }),
   }),
 

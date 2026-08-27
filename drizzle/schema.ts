@@ -39,3 +39,20 @@ export const reviews = mysqlTable("reviews", {
 
 export type Review = typeof reviews.$inferSelect;
 export type InsertReview = typeof reviews.$inferInsert;
+
+export const adminMedia = mysqlTable("admin_media", {
+  id: int("id").autoincrement().primaryKey(),
+  kind: mysqlEnum("kind", ["image", "video"]).notNull(),
+  language: mysqlEnum("language", ["en", "ar", "shared"]).default("shared").notNull(),
+  title: varchar("title", { length: 180 }).notNull(),
+  storageKey: varchar("storageKey", { length: 512 }).notNull(),
+  url: varchar("url", { length: 768 }).notNull(),
+  mimeType: varchar("mimeType", { length: 120 }).notNull(),
+  sizeBytes: int("sizeBytes").notNull(),
+  status: mysqlEnum("status", ["draft", "published"]).default("draft").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AdminMedia = typeof adminMedia.$inferSelect;
+export type InsertAdminMedia = typeof adminMedia.$inferInsert;
