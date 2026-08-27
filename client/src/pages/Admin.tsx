@@ -138,6 +138,7 @@ export default function Admin() {
   const [uploadStage, setUploadStage] = useState<"idle" | "english" | "arabic" | "saved" | "error">("idle");
   const [uploadProgress, setUploadProgress] = useState({ english: 0, arabic: 0 });
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadErrorMessage, setUploadErrorMessage] = useState("");
   const [editingItem, setEditingItem] = useState<AdminMediaItem | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [replaceFile, setReplaceFile] = useState<File | null>(null);
@@ -237,6 +238,7 @@ export default function Admin() {
     const pairKey = `ppfstudio-${Date.now()}-${window.crypto.randomUUID().slice(0, 8)}`;
     try {
       setIsUploading(true);
+      setUploadErrorMessage("");
       setUploadStage("english");
       setUploadProgress({ english: 8, arabic: 0 });
       const englishDataBase64 = await readFileAsBase64(englishFile, percent => setUploadProgress({ english: Math.round(percent * 0.25), arabic: 0 }));
@@ -255,10 +257,12 @@ export default function Admin() {
       setUploadStage("saved");
       toast.success(c.saved);
       void mediaQuery.refetch();
-    } catch {
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "Upload request failed.";
       setUploadStage("error");
+      setUploadErrorMessage(detail);
       setUploadProgress({ english: 0, arabic: 0 });
-      toast.error(language === "ar" ? "تعذر رفع الملفين. تحقق من النوع والحجم وحاول مرة أخرى." : "Upload failed. Check both file types and sizes, then try again.");
+      toast.error(language === "ar" ? "تعذر رفع الملفين. تحقق من النوع والحجم وحاول مرة أخرى." : detail);
     } finally {
       setIsUploading(false);
     }
@@ -307,7 +311,7 @@ export default function Admin() {
             ))}
           </div>
           <label className="admin-check"><input type="checkbox" checked={publish} onChange={event => setPublish(event.target.checked)} /><span>{c.publishNow}</span></label>
-          {uploadStage !== "idle" && <div className={`admin-upload-status ${uploadStage === "error" ? "admin-upload-status--error" : ""}`} aria-live="polite"><span className="admin-status-line">{uploadStage !== "saved" && uploadStage !== "error" && <LoaderCircle className="admin-spinner" size={14} />}{uploadStage === "english" ? c.uploadingEnglish : uploadStage === "arabic" ? c.uploadingArabic : uploadStage === "error" ? c.uploadError : c.saved}</span><div className="admin-progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((uploadProgress.english + uploadProgress.arabic) / 2)}><span style={{ width: `${(uploadProgress.english + uploadProgress.arabic) / 2}%` }} /></div><div className="admin-progress-steps"><span className={uploadProgress.english === 100 ? "is-complete" : ""}>{c.englishSlot}: {uploadProgress.english === 100 ? "100%" : `${uploadProgress.english}%`}</span><span className={uploadProgress.arabic === 100 ? "is-complete" : ""}>{c.arabicSlot}: {uploadProgress.arabic === 100 ? "100%" : `${uploadProgress.arabic}%`}</span></div></div>}
+          {uploadStage !== "idle" && <div className={`admin-upload-status ${uploadStage === "error" ? "admin-upload-status--error" : ""}`} aria-live="polite"><span className="admin-status-line">{uploadStage !== "saved" && uploadStage !== "error" && <LoaderCircle className="admin-spinner" size={14} />}{uploadStage === "english" ? c.uploadingEnglish : uploadStage === "arabic" ? c.uploadingArabic : uploadStage === "error" ? (uploadErrorMessage || c.uploadError) : c.saved}</span><div className="admin-progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((uploadProgress.english + uploadProgress.arabic) / 2)}><span style={{ width: `${(uploadProgress.english + uploadProgress.arabic) / 2}%` }} /></div><div className="admin-progress-steps"><span className={uploadProgress.english === 100 ? "is-complete" : ""}>{c.englishSlot}: {uploadProgress.english === 100 ? "100%" : `${uploadProgress.english}%`}</span><span className={uploadProgress.arabic === 100 ? "is-complete" : ""}>{c.arabicSlot}: {uploadProgress.arabic === 100 ? "100%" : `${uploadProgress.arabic}%`}</span></div></div>}
           <Button type="submit" className="admin-submit" disabled={isUploading || !canSubmit}><Upload size={16} /> {isUploading ? "…" : c.upload}</Button>
         </form>
           <section className="admin-library-card">

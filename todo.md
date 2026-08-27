@@ -117,3 +117,12 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Show per-file progress state, completion state, error state, and retry-friendly messaging.
 - [x] Keep progress accessible with aria-live/status semantics and reduced-motion support.
 - [x] Validate the progress UI with type-check, tests, production build, and responsive browser checks; save a checkpoint.
+
+## Mobile Upload Failure From User Screenshot
+
+- [x] Reproduce the 0% upload failure path and inspect the exact XHR request/response on the mobile-origin route using the supplied screenshot and runtime traces.
+- [x] Verify the tRPC POST envelope, credentials/cookie behavior, and body parser contract for selected image pairs; storage/database success still requires owner-side credentialed smoke testing.
+- [x] Correct the endpoint transport with a credentialed XHR tRPC batch request while preserving admin authentication and language pairing.
+- [x] Show the actual server error inline instead of masking it behind a generic upload failure message.
+- [x] Add regression coverage for the fixed XHR protocol, byte progress callbacks, and successful response parsing.
+- [x] Validate the fix with mobile responsive checks, type-check/tests/build, and save a checkpoint; owner credentialed upload smoke test remains recommended.
