@@ -169,12 +169,13 @@ export default function Home() {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const localizedGalleryItems = useMemo(() => galleryItems.map((item) => isArabic && "arSrc" in item ? { ...item, src: item.arSrc, alt: item.arAlt } : item), [isArabic]);
   const filteredGallery = useMemo(() => {
-    if (activeFilter === 0) return galleryItems;
-    return galleryItems.filter((item) => item.category === galleryFilterKeys[activeFilter]);
-  }, [activeFilter]);
+    if (activeFilter === 0) return localizedGalleryItems;
+    return localizedGalleryItems.filter((item) => item.category === galleryFilterKeys[activeFilter]);
+  }, [activeFilter, localizedGalleryItems]);
 
-  const activeLightboxItem = lightboxIndex === null ? null : galleryItems[lightboxIndex];
+  const activeLightboxItem = lightboxIndex === null ? null : localizedGalleryItems[lightboxIndex];
 
   return (
     <div className={`site-shell ${isArabic ? "site-shell--rtl" : ""}`}>
@@ -293,8 +294,8 @@ export default function Home() {
           </Reveal>
           <div className="gallery-grid">
             {filteredGallery.map((item, index) => {
-              const originalIndex = galleryItems.findIndex((galleryItem) => galleryItem.id === item.id);
-              return <Reveal key={item.id} delay={index * 55} className={`gallery-card gallery-card--${item.id}`}><button onClick={() => setLightboxIndex(originalIndex)} aria-label={`${c.openImage}: ${item.alt}`}><img src={item.src} alt={item.alt} loading="lazy" /><span className="gallery-shade" /><span className="gallery-meta"><span>0{item.id}</span><strong>{c.galleryLabels[galleryItems.findIndex((galleryItem) => galleryItem.id === item.id)]}</strong><ArrowUpRight size={18} /></span></button></Reveal>;
+              const originalIndex = localizedGalleryItems.findIndex((galleryItem) => galleryItem.id === item.id);
+              return <Reveal key={item.id} delay={index * 55} className={`gallery-card gallery-card--${item.id}`}><button onClick={() => setLightboxIndex(originalIndex)} aria-label={`${c.openImage}: ${item.alt}`}><img src={item.src} alt={item.alt} loading="lazy" /><span className="gallery-shade" /><span className="gallery-meta"><span>0{item.id}</span><strong>{c.galleryLabels[localizedGalleryItems.findIndex((galleryItem) => galleryItem.id === item.id)]}</strong><ArrowUpRight size={18} /></span></button></Reveal>;
             })}
           </div>
         </section>

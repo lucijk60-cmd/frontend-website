@@ -24,6 +24,10 @@ export const images = {
   mark: "/manus-storage/ppf-logo-user-640_a0ea4ecd.webp",
   secondaryDetail: "/manus-storage/ppf-installation-detail_d528883e.jpg",
   secondaryStudio: "/manus-storage/ppf-studio-black-car_54ef85c6.jpg",
+  preserveEnglish: "/manus-storage/ppf-preserve-en_a8652e9f.png",
+  preserveArabic: "/manus-storage/ppf-preserve-ar_ae6423a7.png",
+  definitionEnglish: "/manus-storage/ppf-definition-en_ccdaafe2.png",
+  definitionArabic: "/manus-storage/ppf-definition-ar_ff569d7f.png",
 };
 
 export const translations = {
@@ -71,7 +75,7 @@ export const translations = {
     workTitle: "The finish is the proof.",
     workBody: "Explore a selection of recent protection projects, from full-body coverage to precise front-end work.",
     filters: ["All", "Full Body PPF", "Front PPF", "Luxury Cars", "SUV", "Before & After", "Installation"],
-    galleryLabels: ["Full Body PPF", "Luxury Cars", "SUV", "Installation", "Before & After", "Front PPF"],
+    galleryLabels: ["Full Body PPF", "Luxury Cars", "SUV", "Installation", "Before & After", "Front PPF", "Protection Guide", "PPF Explained"],
     beforeEyebrow: "03 / THE DIFFERENCE",
     beforeTitle: "Before & after",
     beforeBody: "Drag across the finish to see how invisible protection keeps the original surface looking untouched.",
@@ -169,7 +173,7 @@ export const translations = {
     workTitle: "النتيجة هي الدليل.",
     workBody: "استكشف مجموعة من مشاريع حماية السيارات، من التغطية الكاملة إلى حماية الواجهة الأمامية بدقة.",
     filters: ["الكل", "PPF كامل", "الواجهة الأمامية", "سيارات فاخرة", "SUV", "قبل وبعد", "تركيب"],
-    galleryLabels: ["PPF كامل", "سيارات فاخرة", "SUV", "تركيب", "قبل وبعد", "الواجهة الأمامية"],
+    galleryLabels: ["PPF كامل", "سيارات فاخرة", "SUV", "تركيب", "قبل وبعد", "الواجهة الأمامية", "دليل الحماية", "ما هو PPF؟"],
     beforeEyebrow: "03 / الفرق الواضح",
     beforeTitle: "قبل وبعد",
     beforeBody: "اسحب عبر السطح لترى كيف تحافظ الحماية غير المرئية على مظهر الطلاء الأصلي.",
@@ -234,6 +238,8 @@ export const galleryItems = [
   { id: 4, category: "Installation", src: images.installation, alt: "Technician aligning clear PPF on a vehicle hood" },
   { id: 5, category: "Before & After", src: images.secondaryStudio, alt: "Glossy vehicle panel in a premium studio" },
   { id: 6, category: "Front PPF", src: images.hero, alt: "Front quarter of a protected black sports coupe" },
+  { id: 7, category: "Before & After", src: images.preserveEnglish, arSrc: images.preserveArabic, alt: "Three-panel comparison showing a new car, worn paint without PPF, and protected paint with PPF", arAlt: "مقارنة من ثلاث لوحات توضح السيارة الجديدة والطلاء المتضرر بدون PPF والطلاء المحمي مع PPF" },
+  { id: 8, category: "Installation", src: images.definitionEnglish, arSrc: images.definitionArabic, alt: "PPF definition over a red luxury car during film installation", arAlt: "شرح معنى PPF فوق سيارة فاخرة حمراء أثناء تركيب الفيلم" },
 ] as const;
 
 export const videoItems = [
