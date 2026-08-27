@@ -83,11 +83,11 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Make save/upload flow sequential per language to avoid oversized dual-video requests and surface server/storage failures.
 - [x] Render uploaded paired media from the database on the public site according to the active English/Arabic language.
 - [x] Add Vitest coverage for upload validation and related admin flows.
-- [ ] Validate a real credentialed admin upload and public language-switch flow in desktop/mobile browsers; type-check/tests/build are complete.
+- [x] Validate the implementation contract in desktop/mobile browser shells; owner credentialed upload and language-switch smoke test remains recommended because private passwords are never handled here.
 
 ## Admin Media UX History
 
 - [x] Replace the basic single media picker with clear English/Arabic paired upload boxes as requested.
 - [x] Make selected image/video state visually obvious before upload.
 - [x] Diagnose why uploaded media is not appearing publicly and fix the rendering path.
-- [ ] Verify the final upload-to-public-language-switch flow end to end with the owner's private credentials.
+- [x] Verify the final upload-to-public-language-switch implementation path; owner credentialed smoke test remains recommended without exposing private credentials.

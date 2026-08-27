@@ -30,6 +30,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { selectPublishedMedia } from "@/lib/media";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   BRAND_NAME,
@@ -204,14 +205,12 @@ export default function Home() {
 
   const localizedGalleryItems = useMemo(() => {
     const staticItems = galleryItems.map((item) => isArabic && "arSrc" in item ? { ...item, src: item.arSrc, alt: item.arAlt } : item);
-    const uploadedItems = (publishedMediaQuery.data ?? [])
-      .filter((item) => item.kind === "image" && (item.language === "shared" || item.language === language))
+    const uploadedItems = selectPublishedMedia(publishedMediaQuery.data ?? [], language, "image")
       .map((item) => ({ id: 10000 + item.id, category: "Admin Uploads", src: item.url, alt: item.title }));
     return [...staticItems, ...uploadedItems];
   }, [isArabic, language, publishedMediaQuery.data]);
   const videoDisplayItems = useMemo(() => {
-    const uploadedVideos = (publishedMediaQuery.data ?? [])
-      .filter((item) => item.kind === "video" && (item.language === "shared" || item.language === language))
+    const uploadedVideos = selectPublishedMedia(publishedMediaQuery.data ?? [], language, "video")
       .map((item) => ({ title: item.title, src: item.url }));
     return [...videoItems, ...uploadedVideos];
   }, [language, publishedMediaQuery.data]);

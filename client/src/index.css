@@ -602,7 +602,8 @@ body:not(.no-reveal) .reveal { animation: reveal-in 650ms var(--ease-out) forwar
 .admin-submit:hover { background: #f0d399; }
 .admin-media-list { display: grid; gap: 14px; }
 .admin-media-item { display: grid; grid-template-columns: 118px 1fr; gap: 15px; padding: 12px; border: 1px solid rgba(255,255,255,.1); background: rgba(0,0,0,.2); }
-.admin-media-preview { aspect-ratio: 1; overflow: hidden; background: #030403; }
+.admin-media-preview { position: relative; aspect-ratio: 1; overflow: hidden; background: #030403; }
+.admin-item-lang-tag { position: absolute; top: 8px; left: 8px; padding: 4px 6px; border: 1px solid rgba(217,185,121,.7); background: rgba(11,12,11,.85); color: #f0d399; font-size: 9px; letter-spacing: .12em; }
 .admin-media-preview img, .admin-media-preview video { width: 100%; height: 100%; object-fit: cover; }
 .admin-media-meta { align-items: flex-start; flex-direction: column; gap: 7px; min-width: 0; }
 .admin-media-meta strong { max-width: 100%; overflow: hidden; color: #f2efe8; font-family: Georgia, serif; font-size: 17px; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }

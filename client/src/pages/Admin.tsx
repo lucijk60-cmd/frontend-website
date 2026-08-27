@@ -250,7 +250,33 @@ export default function Admin() {
           {uploadStage !== "idle" && <div className="admin-upload-status" aria-live="polite">{uploadStage === "english" ? c.uploadingEnglish : uploadStage === "arabic" ? c.uploadingArabic : c.saved}</div>}
           <Button type="submit" className="admin-submit" disabled={uploadMedia.isPending || !canSubmit}><Upload size={16} /> {uploadMedia.isPending ? "…" : c.upload}</Button>
         </form>
-        <section className="admin-library-card"><div className="admin-card-heading"><span className="admin-index">02</span><h2>{c.library}</h2></div>{mediaQuery.isLoading ? <div className="admin-empty">…</div> : mediaQuery.data?.length ? <div className="admin-media-list">{mediaQuery.data.map(item => <article className="admin-media-item" key={item.id}><div className="admin-media-preview">{item.kind === "image" ? <img src={item.url} alt={item.title} /> : <video src={item.url} controls preload="metadata" />}</div><div className="admin-media-meta"><strong>{item.title}</strong><span>{item.language.toUpperCase()} · {item.kind.toUpperCase()}</span><span className={`admin-status admin-status--${item.status}`}>{item.status === "published" ? c.published : c.draft}</span><button className="admin-status-button" onClick={() => updateStatus.mutate({ id: item.id, status: item.status === "published" ? "draft" : "published" })}>{item.status === "published" ? c.unpublish : c.publish}</button></div></article>)}</div> : <div className="admin-empty"><X size={18} />{c.empty}</div>}</section>
+          <section className="admin-library-card">
+            <div className="admin-card-heading"><span className="admin-index">02</span><h2>{c.library}</h2></div>
+            {mediaQuery.isLoading ? (
+              <div className="admin-empty">…</div>
+            ) : mediaQuery.data?.length ? (
+              <div className="admin-media-list">
+                {mediaQuery.data.map((item) => (
+                  <article className="admin-media-item" key={item.id}>
+                    <div className="admin-media-preview">
+                      {item.kind === "image" ? <img src={item.url} alt={item.title} /> : <video src={item.url} controls preload="metadata" />}
+                      <span className="admin-item-lang-tag">{item.language.toUpperCase()}</span>
+                    </div>
+                    <div className="admin-media-meta">
+                      <strong>{item.title}</strong>
+                      <span>{item.kind.toUpperCase()} {item.pairKey ? `· PAIR: ${item.pairKey.slice(-4)}` : ""}</span>
+                      <span className={`admin-status admin-status--${item.status}`}>{item.status === "published" ? c.published : c.draft}</span>
+                      <button className="admin-status-button" onClick={() => updateStatus.mutate({ id: item.id, status: item.status === "published" ? "draft" : "published" })}>
+                        {item.status === "published" ? c.unpublish : c.publish}
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="admin-empty"><X size={18} />{c.empty}</div>
+            )}
+          </section>
       </section>
     </main>
   );
