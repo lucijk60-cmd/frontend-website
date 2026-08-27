@@ -1,0 +1,32 @@
+import { describe, expect, it } from "vitest";
+import { appRouter } from "./routers";
+import type { TrpcContext } from "./_core/context";
+
+function createPublicContext(): TrpcContext {
+  return {
+    user: null,
+    req: { protocol: "https", headers: {} } as TrpcContext["req"],
+    res: {} as TrpcContext["res"],
+  };
+}
+
+describe("reviews", () => {
+  it("rejects submissions that do not meet the review contract", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+
+    await expect(caller.reviews.submit({
+      name: "A",
+      rating: 6,
+      review: "too short",
+    })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("returns a count and approved review collection", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    const result = await caller.reviews.list({ limit: 1, offset: 0 });
+
+    expect(result).toHaveProperty("total");
+    expect(result.total).toBeTypeOf("number");
+    expect(result.items).toBeInstanceOf(Array);
+  });
+});

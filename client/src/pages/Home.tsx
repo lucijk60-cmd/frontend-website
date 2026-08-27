@@ -27,6 +27,9 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
 import {
   BRAND_NAME,
   galleryItems,
@@ -116,9 +119,37 @@ export default function Home() {
   const [videoIndex, setVideoIndex] = useState<number | null>(null);
   const [comparison, setComparison] = useState(52);
   const [statsActive, setStatsActive] = useState(false);
+  const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [reviewFormOpen, setReviewFormOpen] = useState(false);
+  const [reviewName, setReviewName] = useState("");
+  const [reviewVehicle, setReviewVehicle] = useState("");
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState("");
   const statsRef = useRef<HTMLElement | null>(null);
   const c: Content = translations[language];
   const isArabic = language === "ar";
+  const { user } = useAuth();
+  const trpcUtils = trpc.useUtils();
+  const reviewsQuery = trpc.reviews.list.useQuery({ limit: 24, offset: 0 });
+  const pendingReviewsQuery = trpc.reviews.pending.useQuery(undefined, { enabled: user?.role === "admin" });
+  const moderateReview = trpc.reviews.moderate.useMutation({
+    onSuccess: async () => {
+      await Promise.all([trpcUtils.reviews.list.invalidate(), trpcUtils.reviews.pending.invalidate()]);
+      toast.success(isArabic ? "تم تحديث حالة المراجعة." : "Review status updated.");
+    },
+    onError: (error) => toast.error(error.message),
+  });
+  const submitReview = trpc.reviews.submit.useMutation({
+    onSuccess: () => {
+      setReviewName("");
+      setReviewVehicle("");
+      setReviewRating(5);
+      setReviewText("");
+      setReviewFormOpen(false);
+      toast.success(c.reviewPending);
+    },
+    onError: (error) => toast.error(error.message),
+  });
 
   useEffect(() => {
     const timer = window.setTimeout(() => setIsLoading(false), 820);
@@ -330,9 +361,13 @@ export default function Home() {
         <section ref={statsRef} className="stats-section page-width" aria-label={isArabic ? "إحصائيات" : "Statistics"}><div className="stats-grid">{c.stats.map(([value, label]) => <CraftStandard key={label} value={value} label={label} active={statsActive} />)}</div></section>
 
         <section className="section testimonials-section page-width">
-          <Reveal><SectionHeader eyebrow={c.testimonialsEyebrow} title={c.testimonialsTitle} /></Reveal>
-          <div className="testimonial-grid">{c.testimonials.map(([name, vehicle, review, rating], index) => <Reveal key={name} delay={index * 65} className="testimonial-card"><div className="testimonial-top"><div className="stars">{[0, 1, 2, 3, 4].map((star) => <Star key={star} size={13} fill="currentColor" />)}</div><span>{rating}</span></div><p>“{review}”</p><div className="testimonial-person"><span className="testimonial-avatar">{name.charAt(0)}</span><span><strong>{name}</strong><small>{vehicle}</small></span></div></Reveal>)}</div>
+          <div className="reviews-heading-row"><Reveal><SectionHeader eyebrow={c.testimonialsEyebrow} title={c.testimonialsTitle} /></Reveal><Reveal delay={80} className="reviews-actions"><button className="review-count-button" onClick={() => setReviewsOpen(true)} aria-label={c.reviewOpen}><strong>{reviewsQuery.data?.total ?? 0}</strong><span>{c.reviewCountLabel}</span><ArrowUpRight size={17} /></button><button className="button button--line review-submit-button" onClick={() => setReviewFormOpen(true)}><Plus size={16} />{c.reviewFormSubmit}</button></Reveal></div>
+          <p className="review-moderation-note">{c.reviewModeratedNote}</p>
+          {reviewsQuery.isLoading ? <div className="review-empty-state">{isArabic ? "جارٍ تحميل المراجعات..." : "Loading approved reviews..."}</div> : <div className="testimonial-grid">{(reviewsQuery.data?.items ?? []).slice(0, 3).map((review, index) => <Reveal key={review.id} delay={index * 65} className="testimonial-card"><div className="testimonial-top"><div className="stars">{[0, 1, 2, 3, 4].map((star) => <Star key={star} size={13} fill={star < review.rating ? "currentColor" : "none"} />)}</div><span>{review.rating}.0</span></div><p>“{review.review}”</p><div className="testimonial-person"><span className="testimonial-avatar">{review.name.charAt(0).toUpperCase()}</span><span><strong>{review.name}</strong><small>{review.vehicle || (isArabic ? "عميل" : "Client")}</small></span></div></Reveal>)}</div>}
+          {!reviewsQuery.isLoading && (reviewsQuery.data?.items.length ?? 0) === 0 && <div className="review-empty-state">{c.reviewEmpty}</div>}
         </section>
+
+        {user?.role === "admin" && <section className="admin-review-panel page-width"><div className="admin-review-heading"><span className="eyebrow"><span className="eyebrow-rule" />{c.reviewModerationTitle}</span><span>{pendingReviewsQuery.data?.length ?? 0}</span></div>{(pendingReviewsQuery.data ?? []).map((review) => <article className="admin-review-item" key={review.id}><div><strong>{review.name}</strong><small>{review.vehicle || (isArabic ? "عميل" : "Client")} · {review.rating}/5</small><p>{review.review}</p></div><div className="admin-review-actions"><button className="button button--gold" onClick={() => moderateReview.mutate({ id: review.id, status: "approved" })}>{c.reviewApprove}</button><button className="button button--line" onClick={() => moderateReview.mutate({ id: review.id, status: "rejected" })}>{c.reviewReject}</button></div></article>)}{!pendingReviewsQuery.isLoading && (pendingReviewsQuery.data?.length ?? 0) === 0 && <p className="review-empty-state">{c.reviewAdminEmpty}</p>}</section>}
 
         <section id="contact" className="closing-cta">
           <div className="closing-image"><img src={images.hero} alt="Luxury vehicle protected with clear PPF" loading="lazy" /><div className="closing-shade" /></div>
@@ -350,6 +385,14 @@ export default function Home() {
 
       <Dialog open={videoIndex !== null} onOpenChange={(open) => !open && setVideoIndex(null)}>
         <DialogContent className="video-dialog"><DialogTitle className="sr-only">{videoIndex === null ? "" : c.videoCategories[videoIndex]}</DialogTitle><DialogDescription className="sr-only">{c.playVideo}</DialogDescription>{videoIndex !== null && <div className="video-modal-inner"><video src={VIDEO_SOURCE} controls autoPlay playsInline poster={videoItems[videoIndex].src} /></div>}</DialogContent>
+      </Dialog>
+
+      <Dialog open={reviewsOpen} onOpenChange={setReviewsOpen}>
+        <DialogContent className="reviews-dialog"><DialogTitle>{c.reviewOpen}</DialogTitle><DialogDescription>{c.reviewModeratedNote}</DialogDescription><div className="review-list">{(reviewsQuery.data?.items ?? []).map((review) => <article className="review-list-item" key={review.id}><div className="testimonial-top"><div className="stars">{[0, 1, 2, 3, 4].map((star) => <Star key={star} size={13} fill={star < review.rating ? "currentColor" : "none"} />)}</div><time dateTime={new Date(review.createdAt).toISOString()}>{new Date(review.createdAt).toLocaleDateString(language === "ar" ? "ar-SA" : "en-US")}</time></div><p>“{review.review}”</p><div className="testimonial-person"><span className="testimonial-avatar">{review.name.charAt(0).toUpperCase()}</span><span><strong>{review.name}</strong><small>{review.vehicle || (isArabic ? "عميل" : "Client")}</small></span></div></article>)}{(reviewsQuery.data?.items.length ?? 0) === 0 && <div className="review-empty-state">{c.reviewEmpty}</div>}</div></DialogContent>
+      </Dialog>
+
+      <Dialog open={reviewFormOpen} onOpenChange={setReviewFormOpen}>
+        <DialogContent className="review-form-dialog"><DialogTitle>{c.reviewFormTitle}</DialogTitle><DialogDescription>{c.reviewModeratedNote}</DialogDescription><form className="review-form" onSubmit={(event) => { event.preventDefault(); submitReview.mutate({ name: reviewName, vehicle: reviewVehicle || undefined, rating: reviewRating, review: reviewText }); }}><label><span>{c.reviewFormName}</span><input value={reviewName} onChange={(event) => setReviewName(event.target.value)} minLength={2} maxLength={120} required /></label><label><span>{c.reviewFormVehicle}</span><input value={reviewVehicle} onChange={(event) => setReviewVehicle(event.target.value)} maxLength={120} /></label><fieldset><legend>{c.reviewFormRating}</legend><div className="rating-picker">{[1, 2, 3, 4, 5].map((rating) => <button key={rating} type="button" className={rating <= reviewRating ? "active" : ""} onClick={() => setReviewRating(rating)} aria-label={`${rating} / 5`}><Star size={18} fill={rating <= reviewRating ? "currentColor" : "none"} /></button>)}</div></fieldset><label><span>{c.reviewFormText}</span><textarea value={reviewText} onChange={(event) => setReviewText(event.target.value)} minLength={20} maxLength={1000} rows={5} required /></label><button className="button button--gold" type="submit" disabled={submitReview.isPending}>{submitReview.isPending ? (isArabic ? "جارٍ الإرسال..." : "Submitting...") : c.reviewFormSubmit}</button></form></DialogContent>
       </Dialog>
 
       <Dialog open={!isLoading && showLanguageModal} onOpenChange={() => undefined}>
