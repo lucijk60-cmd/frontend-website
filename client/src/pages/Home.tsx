@@ -116,7 +116,7 @@ export default function Home() {
   const isArabic = language === "ar";
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setIsLoading(false), 1450);
+    const timer = window.setTimeout(() => setIsLoading(false), 820);
     const handleScroll = () => setScrolled(window.scrollY > 26);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
