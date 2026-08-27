@@ -61,7 +61,7 @@ export function setAdminSessionCookie(req: Request, res: Response, token: string
   res.cookie(ADMIN_SESSION_COOKIE, token, {
     ...options,
     maxAge: SESSION_TTL_SECONDS * 1000,
-    sameSite: "lax",
+    sameSite: "none",
   });
 }
 
@@ -70,6 +70,6 @@ export function clearAdminSessionCookie(req: Request, res: Response) {
   res.cookie(ADMIN_SESSION_COOKIE, "", {
     ...options,
     maxAge: 0,
-    sameSite: "lax",
+    sameSite: "none",
   });
 }

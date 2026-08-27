@@ -101,14 +101,20 @@ export default function Admin() {
   const [file, setFile] = useState<File | null>(null);
   const [publish, setPublish] = useState(false);
 
-  const mediaQuery = trpc.admin.media.list.useQuery(undefined, { retry: false });
+  const mediaQuery = trpc.admin.media.list.useQuery(undefined, { enabled: authenticated, retry: false });
   const verifyGate = trpc.admin.verifyGate.useMutation({
     onSuccess: () => {
       setAuthenticated(true);
       toast.success(language === "ar" ? "تم الدخول بنجاح." : "Admin access granted.");
       void mediaQuery.refetch();
     },
-    onError: (error) => toast.error(error.message),
+    onError: (error) => toast.error(
+      error.data?.code === "TOO_MANY_REQUESTS"
+        ? error.message
+        : language === "ar"
+          ? "تعذر الدخول. تحقق من كلمات المرور الأربع وحاول مرة أخرى."
+          : "Login failed. Check all four passwords and try again."
+    ),
   });
   const uploadMedia = trpc.admin.media.upload.useMutation({
     onSuccess: () => {

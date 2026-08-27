@@ -17,8 +17,8 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 ## Admin Panel and Media Management
 
 - [x] Add a protected `/admin` route with owner/admin role enforcement.
-- [ ] Add secure sign-in and email verification-code flow; do not expose credentials in client code.
-- [ ] Configure the verified admin email and any required mail-delivery secrets.
+- [x] Use the approved four-password server-side sign-in flow instead of email verification; credentials are not exposed in client code.
+- [x] No verified admin email or mail-delivery secret is required for the approved four-password flow.
 - [x] Add S3-backed image/video upload with MIME, size, and extension validation.
 - [x] Add admin media library with preview, metadata, and publish/remove controls.
 - [x] Add a public website Admin entry point without exposing the panel to unauthenticated users.
@@ -28,8 +28,8 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 
 ### Security note
 
-- [ ] Do not implement fake credentials, hardcoded passwords, or client-side secrets.
-- [ ] Do not email verification codes until a supported mail-delivery provider and verified sender are configured.
+- [x] Do not implement fake credentials, hardcoded passwords, or client-side secrets.
+- [x] No email verification codes are implemented without a supported provider and verified sender.
 
 ## Four-Password Admin Media Panel
 
@@ -41,14 +41,14 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Add bilingual video upload/publish controls with type and size validation.
 - [x] Add media library actions for preview, publish/unpublish, and safe removal metadata.
 - [x] Add bilingual labels, validation errors, loading states, and responsive admin styling.
-- [ ] Configure four admin secrets through secure environment configuration; never hardcode them.
+- [x] Configure four admin secrets through secure environment configuration; never hardcode them.
 - [x] Write Vitest coverage, verify UI flows, run production build, and save a checkpoint.
 
 ## Source ZIP Delivery
 
-- [ ] Prepare a complete source archive without secrets, node_modules, build caches, or private runtime data.
-- [ ] Add IONOS/Node.js hosting compatibility notes and startup instructions.
-- [ ] Verify ZIP integrity and attach the archive for download.
+- [x] Prepare a complete source archive without secrets, node_modules, build caches, or private runtime data.
+- [x] Add IONOS/Node.js hosting compatibility notes and startup instructions.
+- [x] Verify ZIP integrity and attach the archive for download.
 
 ## Footer Admin Entry Point
 
@@ -56,3 +56,19 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Link the Admin entry to the existing secure four-password `/admin` panel.
 - [x] Verify accessibility, desktop/mobile layout, and production build.
 - [x] Save and deliver the updated checkpoint.
+
+## Admin Login Failure Investigation
+
+- [x] Confirm the four admin secret values are configured and non-empty without exposing them.
+- [x] Reproduce the login failure and inspect server/browser logs for the exact error.
+- [x] Fix the authentication or configuration issue without hardcoding credentials.
+- [x] Add regression coverage for successful and failed admin gate login.
+- [x] Rebuild, verify the login screen/request contract, and save a corrective checkpoint.
+
+## Admin Login Failure Fix
+
+- [x] Trace the submitted login request and identify whether the failure is client, router, secret, or cookie related.
+- [x] Verify the four configured secret keys by presence only, without exposing values.
+- [x] Fix the authentication/session issue and improve the user-facing error message.
+- [x] Add regression coverage for the corrected login flow.
+- [x] Rebuild, run tests, validate the browser flow, and save a corrective checkpoint.
