@@ -1,5 +1,14 @@
 # Logo and Loading Experience Update
 
+## Snapchat and TikTok Footer Links
+
+- [x] Add Snapchat and TikTok URLs to centralized site configuration.
+- [x] Place Snapchat and TikTok icons below the Instagram icon in the footer.
+- [x] Add accessible labels and safe external-link behavior.
+- [x] Verify desktop/mobile presentation and run the production build.
+- [x] Save and deliver the updated checkpoint.
+
+
 ## Instagram Profile Link Update
 
 - [x] Add the provided Instagram URL to the centralized site configuration.

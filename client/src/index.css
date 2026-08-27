@@ -317,6 +317,11 @@ img { display: block; max-width: 100%; }
 .footer-label { margin-bottom: 9px; color: var(--gold); font-size: 9px; letter-spacing: .2em; text-transform: uppercase; }
 .footer-column button, .footer-column a { display: inline-flex; align-items: center; gap: 8px; color: var(--soft); font-size: 11px; transition: color 180ms ease; }
 .footer-column button:hover, .footer-column a:hover { color: var(--white); }
+.social-links { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-top: 1px; }
+.social-link { position: relative; display: inline-flex; align-items: center; gap: 9px; min-height: 24px; color: var(--soft); font-size: 11px; transition: color 180ms ease, transform 180ms var(--ease-out); }
+.social-link svg { color: var(--gold); transition: transform 180ms var(--ease-out), color 180ms ease; }
+.social-link:hover { color: var(--white); transform: translateX(3px); }
+.social-link:hover svg { color: var(--gold-light); transform: translateY(-1px); }
 .footer-column .whatsapp-link { color: var(--green); }
 .footer-bottom { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-top: 21px; border-top: 1px solid rgba(244,242,237,.12); color: rgba(168,170,168,.65); font-size: 9px; letter-spacing: .08em; }
 .footer-bottom button { color: var(--gold); font-size: inherit; }
@@ -374,6 +379,7 @@ body:not(.no-reveal) .reveal { animation: reveal-in 650ms var(--ease-out) forwar
 [dir="rtl"] .hero-side-note { transform: none; writing-mode: vertical-lr; }
 [dir="rtl"] .button:hover svg, [dir="rtl"] .gallery-card button:hover .gallery-meta svg, [dir="rtl"] .mobile-nav-list button:hover svg { transform: translate(-3px, -3px); }
 [dir="rtl"] .section-aside-note { border-inline-start: 0; border-inline-end: 1px solid var(--gold); }
+[dir="rtl"] .social-link:hover { transform: translateX(-3px); }
 [dir="rtl"] .process-copy, [dir="rtl"] .closing-content { direction: rtl; }
 [dir="rtl"] .language-card > svg { right: auto; left: 17px; transform: scaleX(-1); }
 [dir="rtl"] .language-card { text-align: right; align-items: flex-start; }
@@ -472,6 +478,7 @@ body:not(.no-reveal) .reveal { animation: reveal-in 650ms var(--ease-out) forwar
   .footer-grid { grid-template-columns: 1fr 1fr; row-gap: 50px; padding-bottom: 52px; }
   .footer-grid > div:first-child { grid-column: span 2; }
   .footer-bottom { align-items: flex-start; flex-direction: column; }
+  .social-links { gap: 14px; }
   .floating-whatsapp { right: 14px; bottom: 14px; padding: 13px; border-radius: 50%; }
   .floating-whatsapp span { display: none; }
   [dir="rtl"] .floating-whatsapp { right: auto; left: 14px; }
