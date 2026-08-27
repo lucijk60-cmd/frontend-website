@@ -153,3 +153,11 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Preserve the full-stack source/server package separately so Admin, reviews, database, and media upload features are not misrepresented as static-only.
 - [x] Update IONOS deployment documentation with exact upload locations and runtime requirements.
 - [x] Validate package structure, asset references, build output, and deployment instructions; save a checkpoint.
+
+## IONOS Compatibility Conversion
+
+- [x] Audit the static package for blank-page causes: missing assets, absolute paths, unsupported runtime scripts, and SPA fallback behavior.
+- [x] Convert the public frontend package to a self-contained IONOS-safe root structure without changing the protected full-stack source.
+- [x] Add a visible static fallback/error page and deployment diagnostics so missing JavaScript or API runtime is understandable.
+- [x] Keep Node.js, database, storage, and admin requirements isolated in the full-stack deployment package and documentation.
+- [x] Validate converted files, asset paths, archive integrity, browser rendering, and save a checkpoint.
