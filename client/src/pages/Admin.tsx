@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Check, FileImage, Film, LockKeyhole, LogOut, Pencil, RefreshCw, Upload, X } from "lucide-react";
+import { ArrowLeft, Check, FileImage, Film, LoaderCircle, LockKeyhole, LogOut, Pencil, RefreshCw, Upload, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { uploadMediaWithProgress } from "@/lib/uploadProgress";
 
 type UploadKind = "image" | "video";
 type UploadLanguage = "en" | "ar" | "shared";
@@ -113,9 +114,10 @@ const copy = {
   },
 } as const;
 
-function readFileAsBase64(file: File) {
+function readFileAsBase64(file: File, onProgress?: (percent: number) => void) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
+    reader.onprogress = event => { if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100)); };
     reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
     reader.onerror = () => reject(new Error("Unable to read file."));
     reader.readAsDataURL(file);
@@ -134,6 +136,8 @@ export default function Admin() {
   const [arabicFile, setArabicFile] = useState<SelectedAsset>(null);
   const [publish, setPublish] = useState(true);
   const [uploadStage, setUploadStage] = useState<"idle" | "english" | "arabic" | "saved" | "error">("idle");
+  const [uploadProgress, setUploadProgress] = useState({ english: 0, arabic: 0 });
+  const [isUploading, setIsUploading] = useState(false);
   const [editingItem, setEditingItem] = useState<AdminMediaItem | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [replaceFile, setReplaceFile] = useState<File | null>(null);
@@ -161,9 +165,6 @@ export default function Admin() {
           ? "تعذر الدخول. تحقق من كلمات المرور الأربع وحاول مرة أخرى."
           : "Login failed. Check all four passwords and try again."
     ),
-  });
-  const uploadMedia = trpc.admin.media.upload.useMutation({
-    onError: (error) => toast.error(error.message),
   });
   const updateMedia = trpc.admin.media.update.useMutation({
     onSuccess: () => { toast.success(language === "ar" ? "تم تحديث بيانات الوسائط." : "Media details updated."); setEditingItem(null); void mediaQuery.refetch(); },
@@ -235,12 +236,18 @@ export default function Admin() {
     }
     const pairKey = `ppfstudio-${Date.now()}-${window.crypto.randomUUID().slice(0, 8)}`;
     try {
+      setIsUploading(true);
       setUploadStage("english");
-      const englishDataBase64 = await readFileAsBase64(englishFile);
-      await uploadMedia.mutateAsync({ kind, language: "en", pairKey, title: title.trim(), fileName: englishFile.name, mimeType: englishFile.type, dataBase64: englishDataBase64, publish });
+      setUploadProgress({ english: 8, arabic: 0 });
+      const englishDataBase64 = await readFileAsBase64(englishFile, percent => setUploadProgress({ english: Math.round(percent * 0.25), arabic: 0 }));
+      setUploadProgress({ english: 28, arabic: 0 });
+      await uploadMediaWithProgress({ kind, language: "en", pairKey, title: title.trim(), fileName: englishFile.name, mimeType: englishFile.type, dataBase64: englishDataBase64, publish }, percent => setUploadProgress({ english: 25 + Math.round(percent * 0.75), arabic: 0 }));
+      setUploadProgress({ english: 100, arabic: 8 });
       setUploadStage("arabic");
-      const arabicDataBase64 = await readFileAsBase64(arabicFile);
-      await uploadMedia.mutateAsync({ kind, language: "ar", pairKey, title: title.trim(), fileName: arabicFile.name, mimeType: arabicFile.type, dataBase64: arabicDataBase64, publish });
+      const arabicDataBase64 = await readFileAsBase64(arabicFile, percent => setUploadProgress({ english: 100, arabic: Math.round(percent * 0.25) }));
+      setUploadProgress({ english: 100, arabic: 28 });
+      await uploadMediaWithProgress({ kind, language: "ar", pairKey, title: title.trim(), fileName: arabicFile.name, mimeType: arabicFile.type, dataBase64: arabicDataBase64, publish }, percent => setUploadProgress({ english: 100, arabic: 25 + Math.round(percent * 0.75) }));
+      setUploadProgress({ english: 100, arabic: 100 });
       setTitle("");
       setEnglishFile(null);
       setArabicFile(null);
@@ -250,7 +257,10 @@ export default function Admin() {
       void mediaQuery.refetch();
     } catch {
       setUploadStage("error");
+      setUploadProgress({ english: 0, arabic: 0 });
       toast.error(language === "ar" ? "تعذر رفع الملفين. تحقق من النوع والحجم وحاول مرة أخرى." : "Upload failed. Check both file types and sizes, then try again.");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -297,8 +307,8 @@ export default function Admin() {
             ))}
           </div>
           <label className="admin-check"><input type="checkbox" checked={publish} onChange={event => setPublish(event.target.checked)} /><span>{c.publishNow}</span></label>
-          {uploadStage !== "idle" && <div className={`admin-upload-status ${uploadStage === "error" ? "admin-upload-status--error" : ""}`} aria-live="polite">{uploadStage === "english" ? c.uploadingEnglish : uploadStage === "arabic" ? c.uploadingArabic : uploadStage === "error" ? c.uploadError : c.saved}</div>}
-          <Button type="submit" className="admin-submit" disabled={uploadMedia.isPending || !canSubmit}><Upload size={16} /> {uploadMedia.isPending ? "…" : c.upload}</Button>
+          {uploadStage !== "idle" && <div className={`admin-upload-status ${uploadStage === "error" ? "admin-upload-status--error" : ""}`} aria-live="polite"><span className="admin-status-line">{uploadStage !== "saved" && uploadStage !== "error" && <LoaderCircle className="admin-spinner" size={14} />}{uploadStage === "english" ? c.uploadingEnglish : uploadStage === "arabic" ? c.uploadingArabic : uploadStage === "error" ? c.uploadError : c.saved}</span><div className="admin-progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((uploadProgress.english + uploadProgress.arabic) / 2)}><span style={{ width: `${(uploadProgress.english + uploadProgress.arabic) / 2}%` }} /></div><div className="admin-progress-steps"><span className={uploadProgress.english === 100 ? "is-complete" : ""}>{c.englishSlot}: {uploadProgress.english === 100 ? "100%" : `${uploadProgress.english}%`}</span><span className={uploadProgress.arabic === 100 ? "is-complete" : ""}>{c.arabicSlot}: {uploadProgress.arabic === 100 ? "100%" : `${uploadProgress.arabic}%`}</span></div></div>}
+          <Button type="submit" className="admin-submit" disabled={isUploading || !canSubmit}><Upload size={16} /> {isUploading ? "…" : c.upload}</Button>
         </form>
           <section className="admin-library-card">
             <div className="admin-card-heading"><span className="admin-index">02</span><h2>{c.library}</h2></div>

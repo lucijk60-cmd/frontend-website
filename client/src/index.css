@@ -610,6 +610,14 @@ body:not(.no-reveal) .reveal { animation: reveal-in 650ms var(--ease-out) forwar
 .admin-clear-file:hover { border-color: #f0d399; color: #f0d399; }
 .admin-upload-status { margin: 0 0 14px; padding: 10px 12px; border-left: 2px solid #d9b979; background: rgba(217,185,121,.08); color: #d9b979; font-size: 11px; letter-spacing: .05em; }
 .admin-upload-status--error { border-left-color: #e98282; background: rgba(233,130,130,.08); color: #f0a5a5; }
+.admin-status-line { display: flex; align-items: center; gap: 8px; }
+.admin-spinner { animation: admin-spin .9s linear infinite; }
+.admin-progress-track { height: 5px; margin-top: 12px; overflow: hidden; background: rgba(255,255,255,.12); }
+.admin-progress-track span { display: block; height: 100%; background: linear-gradient(90deg, #b58f4d, #f0d399); transition: width 220ms cubic-bezier(.23,1,.32,1); }
+.admin-progress-steps { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; color: #8f9089; font-size: 9px; letter-spacing: .04em; }
+.admin-progress-steps .is-complete { color: #7ce3ae; }
+@keyframes admin-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .admin-spinner { animation: none; } .admin-progress-track span { transition: none; } }
 .admin-pair-dropzone input { display: none; }
 .admin-check { display: flex; align-items: center; gap: 9px; margin: 0 0 20px; color: #a7a59c; font-size: 12px; }
 .admin-submit { width: 100%; min-height: 46px; border: 1px solid #d9b979; border-radius: 0; background: #d9b979; color: #11120f; text-transform: uppercase; letter-spacing: .08em; }

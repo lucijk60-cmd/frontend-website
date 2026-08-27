@@ -110,3 +110,10 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Add clear inline error and progress states for selection, validation, upload, save, and public refresh.
 - [x] Add regression coverage for the corrected upload flow and large-file safeguards.
 - [x] Verify the corrected implementation with admin/public route checks, type-check/tests/build, and save a checkpoint; owner credentialed upload smoke test remains recommended.
+
+## Upload Progress Feedback
+
+- [x] Add a visible upload progress bar and loading animation for the English/Arabic upload steps.
+- [x] Show per-file progress state, completion state, error state, and retry-friendly messaging.
+- [x] Keep progress accessible with aria-live/status semantics and reduced-motion support.
+- [x] Validate the progress UI with type-check, tests, production build, and responsive browser checks; save a checkpoint.
