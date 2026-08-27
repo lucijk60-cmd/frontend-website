@@ -1,5 +1,13 @@
 # Logo and Loading Experience Update
 
+## Instagram Profile Link Update
+
+- [x] Add the provided Instagram URL to the centralized site configuration.
+- [x] Connect the footer Instagram icon with an accessible external link.
+- [x] Verify the link behavior and responsive footer presentation.
+- [x] Run type-check/build and save the updated checkpoint.
+
+
 ## Fast Logo Loading Update
 
 - [x] Create a smaller optimized logo asset while preserving transparency and visual quality.
