@@ -10,7 +10,9 @@ Install Node.js dependencies with `pnpm install`, run `pnpm check`, run `pnpm te
 
 ## Required runtime configuration
 
-The full-stack deployment requires the platform-provided database, OAuth, JWT, Forge storage, and application environment variables. The four Admin gate values are `ADMIN_GATE_PASSWORD`, `PPF_GATE_PASSWORD`, `ADMIN_PANEL_PASSWORD`, and `PRIVATE_ACCESS_PASSWORD`. Configure these through the hosting provider's secret manager. Never commit `.env` files or place passwords in client code.
+The full-stack deployment requires the platform-provided database, OAuth, JWT, Forge storage, and application environment variables. The complete variable-name template is `IONOS_ENV.example`; copy the names into the IONOS Node.js application's environment settings and replace only the placeholder values. The four Admin gate values are `ADMIN_GATE_PASSWORD`, `PPF_GATE_PASSWORD`, `ADMIN_PANEL_PASSWORD`, and `PRIVATE_ACCESS_PASSWORD`. Configure these through the hosting provider's secret manager. Never commit `.env` files or place passwords in client code.
+
+For an IONOS Node.js application, use Node.js 20 or newer, set the project root to the uploaded source package, install dependencies with `npm install`, build with `npm run build`, and start with `npm start`. The application listens on the platform-provided `PORT`; do not hardcode a port. Set the public API/origin values to the actual IONOS domain when configuring OAuth and cookies.
 
 ## Static-only deployment
 

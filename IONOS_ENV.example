@@ -1,0 +1,21 @@
+# Copy these names into the IONOS Node.js application's environment settings.
+# Never commit real values or place passwords in client-side files.
+
+NODE_ENV=production
+DATABASE_URL=mysql://USER:PASSWORD@HOST:3306/DATABASE
+JWT_SECRET=replace-with-a-long-random-server-secret
+VITE_APP_ID=your-manus-oauth-app-id
+OAUTH_SERVER_URL=https://oauth.example.invalid
+VITE_OAUTH_PORTAL_URL=https://oauth.example.invalid
+OWNER_OPEN_ID=your-owner-open-id
+OWNER_NAME=PPFStudio Owner
+BUILT_IN_FORGE_API_URL=https://api.example.invalid
+BUILT_IN_FORGE_API_KEY=server-only-secret
+VITE_FRONTEND_FORGE_API_URL=https://api.example.invalid
+VITE_FRONTEND_FORGE_API_KEY=frontend-safe-token
+
+# Four server-side admin gate values; set strong unique values.
+ADMIN_GATE_PASSWORD=replace-me
+PPF_GATE_PASSWORD=replace-me
+ADMIN_PANEL_PASSWORD=replace-me
+PRIVATE_ACCESS_PASSWORD=replace-me
