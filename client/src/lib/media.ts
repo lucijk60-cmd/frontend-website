@@ -15,3 +15,7 @@ export function selectPublishedMedia<T extends LocalizedMediaRecord>(
     item => item.status === "published" && item.kind === kind && (item.language === language || item.language === "shared"),
   );
 }
+
+export function selectVideoSource(item: { src: string; isUploaded: boolean }, fallbackSource: string) {
+  return item.isUploaded ? item.src : fallbackSource;
+}

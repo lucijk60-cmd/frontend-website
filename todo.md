@@ -135,3 +135,13 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Display useful localized validation/server diagnostics inline without exposing secrets.
 - [x] Add regression coverage for the corrected binary endpoint response and successful upload response parsing.
 - [x] Run type-check, 11 tests, production build, mobile route verification, unauthenticated endpoint smoke test, and save a checkpoint; owner credentialed upload smoke test remains recommended.
+
+## Full Website Audit and Fixes
+
+- [x] Audit project structure, startup logs, routes, environment usage, and production entrypoints.
+- [x] Audit English/Arabic switching, RTL/LTR layout, navigation, gallery, reviews, and mobile responsiveness.
+- [x] Audit Admin authentication, media selection, raw-binary upload, edit/replace, progress, storage, database, and public refresh flow.
+- [x] Audit API error handling, security boundaries, accessibility semantics, performance, and deployment configuration.
+- [x] Fix every reproducible high-impact defect found during the audit without exposing secrets or fabricating review content.
+- [x] Add or update Vitest regression coverage for each corrected defect, including uploaded video source selection and canonical/domain consistency.
+- [x] Run type-check, 13 tests, production build, runtime checks, desktop/mobile screenshots, and save an audit checkpoint.

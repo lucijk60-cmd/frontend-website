@@ -30,7 +30,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { selectPublishedMedia } from "@/lib/media";
+import { selectPublishedMedia, selectVideoSource } from "@/lib/media";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   BRAND_NAME,
@@ -169,8 +169,8 @@ export default function Home() {
     document.documentElement.dir = c.dir;
     document.title = language === "ar" ? "حماية الطلاء PPF | حماية احترافية للسيارات" : "Premium PPF Film | Professional Paint Protection";
     const description = language === "ar"
-      ? "حماية احترافية لطلاء السيارات باستخدام أفلام PPF عالية الجودة وتركيب دقيق في استوديو AURELIS."
-      : "Premium paint protection film, precision installation and automotive care from AURELIS.";
+      ? "حماية احترافية لطلاء السيارات باستخدام أفلام PPF عالية الجودة وتركيب دقيق في استوديو PPFStudio."
+      : "Premium paint protection film, precision installation and automotive care from PPFStudio.";
     const meta = document.querySelector('meta[name="description"]');
     if (meta) meta.setAttribute("content", description);
   }, [c.dir, c.locale, language]);
@@ -210,9 +210,10 @@ export default function Home() {
     return [...staticItems, ...uploadedItems];
   }, [isArabic, language, publishedMediaQuery.data]);
   const videoDisplayItems = useMemo(() => {
+    const staticVideos = videoItems.map(item => ({ ...item, isUploaded: false }));
     const uploadedVideos = selectPublishedMedia(publishedMediaQuery.data ?? [], language, "video")
-      .map((item) => ({ title: item.title, src: item.url }));
-    return [...videoItems, ...uploadedVideos];
+      .map((item) => ({ title: item.title, src: item.url, isUploaded: true }));
+    return [...staticVideos, ...uploadedVideos];
   }, [language, publishedMediaQuery.data]);
   const filteredGallery = useMemo(() => {
     if (activeFilter === 0) return localizedGalleryItems;
@@ -235,7 +236,7 @@ export default function Home() {
 
       <header className={`site-nav ${scrolled ? "site-nav--scrolled" : ""}`}>
         <div className="nav-inner">
-          <button className="brand-button" onClick={() => scrollToSection("home")} aria-label="AURELIS home">
+          <button className="brand-button" onClick={() => scrollToSection("home")} aria-label="PPFStudio home">
             <BrandMark />
           </button>
           <nav className="desktop-nav" aria-label="Primary navigation">
@@ -262,7 +263,7 @@ export default function Home() {
           <SheetHeader>
             <BrandMark compact />
             <SheetTitle className="sr-only">{c.menu}</SheetTitle>
-            <SheetDescription className="sr-only">AURELIS navigation</SheetDescription>
+            <SheetDescription className="sr-only">PPFStudio navigation</SheetDescription>
           </SheetHeader>
           <div className="mobile-nav-list">
             {c.nav.map(([label, id]) => (
@@ -325,7 +326,7 @@ export default function Home() {
         <section id="why-us" className="manifesto-section">
           <div className="page-width manifesto-grid">
             <Reveal><div className="manifesto-numeral">02<span>/</span></div></Reveal>
-            <Reveal delay={80} className="manifesto-copy"><div className="eyebrow"><span className="eyebrow-rule" />{isArabic ? "لماذا تختارنا؟" : "WHY AURELIS"}</div><h2>{isArabic ? "حماية لا تُرى. دقة لا تُنسى." : "Protection that disappears. Precision that remains."}</h2></Reveal>
+            <Reveal delay={80} className="manifesto-copy"><div className="eyebrow"><span className="eyebrow-rule" />{isArabic ? "لماذا تختارنا؟" : "WHY PPFSTUDIO"}</div><h2>{isArabic ? "حماية لا تُرى. دقة لا تُنسى." : "Protection that disappears. Precision that remains."}</h2></Reveal>
             <Reveal delay={140} className="manifesto-points">
               {[isArabic ? ["جودة استثنائية", "مواد عالية الجودة ونتائج احترافية."] : ["Exceptional quality", "Premium materials, professionally finished."], isArabic ? ["تركيب احترافي", "عناية دقيقة بكل تفصيلة أثناء التركيب."] : ["Professional installation", "Measured care in every step of the install."], isArabic ? ["حماية غير مرئية", "حماية قوية مع الحفاظ على المظهر الأصلي."] : ["Invisible protection", "Strong protection without changing the original look."]].map(([title, body]) => <div className="manifesto-point" key={title}><Check size={16} /><div><strong>{title}</strong><span>{body}</span></div></div>)}
             </Reveal>
@@ -398,7 +399,7 @@ export default function Home() {
       </Dialog>
 
       <Dialog open={videoIndex !== null} onOpenChange={(open) => !open && setVideoIndex(null)}>
-        <DialogContent className="video-dialog"><DialogTitle className="sr-only">{videoIndex === null ? "" : c.videoCategories[videoIndex]}</DialogTitle><DialogDescription className="sr-only">{c.playVideo}</DialogDescription>{videoIndex !== null && <div className="video-modal-inner"><video src={videoDisplayItems[videoIndex].src.startsWith("http") ? videoDisplayItems[videoIndex].src : VIDEO_SOURCE} controls autoPlay playsInline poster={videoDisplayItems[videoIndex].src} /></div>}</DialogContent>
+        <DialogContent className="video-dialog"><DialogTitle className="sr-only">{videoIndex === null ? "" : videoDisplayItems[videoIndex]?.title}</DialogTitle><DialogDescription className="sr-only">{c.playVideo}</DialogDescription>{videoIndex !== null && <div className="video-modal-inner"><video src={selectVideoSource(videoDisplayItems[videoIndex], VIDEO_SOURCE)} controls autoPlay playsInline poster={videoDisplayItems[videoIndex].isUploaded ? undefined : videoDisplayItems[videoIndex].src} /></div>}</DialogContent>
       </Dialog>
 
       <Dialog open={reviewsOpen} onOpenChange={setReviewsOpen}>
