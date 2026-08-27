@@ -38,7 +38,7 @@ function registerGateFailure(req: { ip?: string; headers: Record<string, string 
   gateAttempts.set(key, { ...current, count: current.count + 1 });
 }
 
-function sanitizeFileName(fileName: string) {
+export function sanitizeFileName(fileName: string) {
   return fileName.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-120) || "upload";
 }
 

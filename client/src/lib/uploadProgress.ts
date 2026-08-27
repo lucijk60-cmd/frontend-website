@@ -1,50 +1,45 @@
-export type UploadProgressInput = {
+export type UploadBinaryInput = {
   kind: "image" | "video";
   language: "en" | "ar" | "shared";
   pairKey?: string;
   title: string;
   fileName: string;
   mimeType: string;
-  dataBase64: string;
   publish: boolean;
 };
 
 type ProgressCallback = (percent: number) => void;
 
-type TrpcEnvelope = {
-  result?: { data?: unknown };
-  error?: { json?: { message?: string }; message?: string };
-};
+type UploadResponse = { success?: boolean; id?: number; url?: string; message?: string };
 
-export function uploadMediaWithProgress(input: UploadProgressInput, onProgress: ProgressCallback) {
-  return new Promise<unknown>((resolve, reject) => {
+export function uploadMediaWithProgress(input: UploadBinaryInput, file: File, onProgress: ProgressCallback) {
+  return new Promise<UploadResponse>((resolve, reject) => {
     const request = new XMLHttpRequest();
-    request.open("POST", "/api/trpc/admin.media.upload?batch=1", true);
+    request.open("POST", "/api/admin/media/upload-binary", true);
     request.withCredentials = true;
-    request.setRequestHeader("content-type", "application/json");
+    request.setRequestHeader("content-type", "application/octet-stream");
+    request.setRequestHeader("x-media-kind", input.kind);
+    request.setRequestHeader("x-media-language", input.language);
+    request.setRequestHeader("x-media-title", encodeURIComponent(input.title));
+    request.setRequestHeader("x-media-filename", encodeURIComponent(input.fileName));
+    request.setRequestHeader("x-media-mime-type", input.mimeType);
+    request.setRequestHeader("x-media-publish", String(input.publish));
+    if (input.pairKey) request.setRequestHeader("x-media-pair-key", input.pairKey);
     request.upload.onprogress = event => {
       if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100));
     };
     request.onerror = () => reject(new Error("Network error while uploading the media asset."));
     request.onabort = () => reject(new Error("Media upload was cancelled."));
     request.onload = () => {
-      if (request.status < 200 || request.status >= 300) {
-        reject(new Error(`Upload request failed (${request.status}).`));
+      let payload: UploadResponse = {};
+      try { payload = JSON.parse(request.responseText) as UploadResponse; } catch { /* handled by status below */ }
+      if (request.status < 200 || request.status >= 300 || payload.success !== true) {
+        reject(new Error(payload.message ?? `Upload request failed (${request.status}).`));
         return;
       }
-      try {
-        const envelopes = JSON.parse(request.responseText) as TrpcEnvelope[];
-        const envelope = envelopes[0];
-        if (envelope?.error) {
-          reject(new Error(envelope.error.json?.message ?? envelope.error.message ?? "Upload failed."));
-          return;
-        }
-        onProgress(100);
-        resolve(envelope?.result?.data);
-      } catch {
-        reject(new Error("The upload response could not be read."));
-      }
+      onProgress(100);
+      resolve(payload);
     };
-    request.send(JSON.stringify({ 0: { json: input } }));
+    request.send(file);
   });
 }

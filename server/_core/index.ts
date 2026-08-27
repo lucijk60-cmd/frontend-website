@@ -5,7 +5,10 @@ import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
-import { appRouter } from "../routers";
+import { appRouter, sanitizeFileName, validateUpload } from "../routers";
+import { createAdminMedia } from "../db";
+import { storagePut } from "../storage";
+import { isAdminSession } from "../adminAuth";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 
@@ -37,6 +40,30 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "100mb", extended: true, parameterLimit: 100000 }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+  app.post("/api/admin/media/upload-binary", express.raw({ type: "application/octet-stream", limit: "55mb" }), async (req, res) => {
+    try {
+      if (!(await isAdminSession(req))) { res.status(403).json({ message: "Admin access required" }); return; }
+      const kind = req.header("x-media-kind");
+      const language = req.header("x-media-language");
+      const title = decodeURIComponent(req.header("x-media-title") ?? "");
+      const fileName = decodeURIComponent(req.header("x-media-filename") ?? "");
+      const mimeType = req.header("x-media-mime-type") ?? "";
+      const pairKey = req.header("x-media-pair-key") || undefined;
+      const publish = req.header("x-media-publish") === "true";
+      const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+      if ((kind !== "image" && kind !== "video") || (language !== "en" && language !== "ar" && language !== "shared") || title.trim().length < 2 || title.length > 180 || !/^[^/\\\\]+\\.[a-zA-Z0-9]{2,5}$/.test(fileName) || !mimeType) {
+        res.status(400).json({ message: "Invalid media metadata." }); return;
+      }
+      validateUpload({ kind, language, pairKey, title: title.trim(), fileName, mimeType, dataBase64: "x".repeat(20), publish }, body.byteLength);
+      const storagePath = `admin-media/${kind}/${language}/${pairKey ? `${pairKey}-` : ""}${Date.now()}-${sanitizeFileName(fileName)}`;
+      const stored = await storagePut(storagePath, body, mimeType);
+      const saved = await createAdminMedia({ kind, language, pairKey, title: title.trim(), storageKey: stored.key, url: stored.url, mimeType, sizeBytes: body.byteLength, status: publish ? "published" : "draft" });
+      res.status(200).json({ success: true, id: saved.id, url: stored.url });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Media upload failed.";
+      res.status(message.includes("supported") || message.includes("under") || message.includes("extension") ? 400 : 500).json({ message });
+    }
+  });
   // tRPC API
   app.use(
     "/api/trpc",

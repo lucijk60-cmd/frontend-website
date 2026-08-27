@@ -126,3 +126,12 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Show the actual server error inline instead of masking it behind a generic upload failure message.
 - [x] Add regression coverage for the fixed XHR protocol, byte progress callbacks, and successful response parsing.
 - [x] Validate the fix with mobile responsive checks, type-check/tests/build, and save a checkpoint; owner credentialed upload smoke test remains recommended.
+
+## HTTP 400 Upload Rejection From User Screenshot
+
+- [x] Capture and inspect the reported HTTP 400 response shape and request payload contract from the supplied mobile screenshot and runtime traces.
+- [x] Compare the custom XHR body with the server parser and identify the unreliable JSON/base64 transport path.
+- [x] Fix the request transport with an authenticated raw-binary endpoint while preserving credentials, file validation, pairKey, and progress callbacks.
+- [x] Display useful localized validation/server diagnostics inline without exposing secrets.
+- [x] Add regression coverage for the corrected binary endpoint response and successful upload response parsing.
+- [x] Run type-check, 11 tests, production build, mobile route verification, unauthenticated endpoint smoke test, and save a checkpoint; owner credentialed upload smoke test remains recommended.

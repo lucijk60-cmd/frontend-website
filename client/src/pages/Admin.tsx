@@ -241,14 +241,10 @@ export default function Admin() {
       setUploadErrorMessage("");
       setUploadStage("english");
       setUploadProgress({ english: 8, arabic: 0 });
-      const englishDataBase64 = await readFileAsBase64(englishFile, percent => setUploadProgress({ english: Math.round(percent * 0.25), arabic: 0 }));
-      setUploadProgress({ english: 28, arabic: 0 });
-      await uploadMediaWithProgress({ kind, language: "en", pairKey, title: title.trim(), fileName: englishFile.name, mimeType: englishFile.type, dataBase64: englishDataBase64, publish }, percent => setUploadProgress({ english: 25 + Math.round(percent * 0.75), arabic: 0 }));
+      await uploadMediaWithProgress({ kind, language: "en", pairKey, title: title.trim(), fileName: englishFile.name, mimeType: englishFile.type, publish }, englishFile, percent => setUploadProgress({ english: percent, arabic: 0 }));
       setUploadProgress({ english: 100, arabic: 8 });
       setUploadStage("arabic");
-      const arabicDataBase64 = await readFileAsBase64(arabicFile, percent => setUploadProgress({ english: 100, arabic: Math.round(percent * 0.25) }));
-      setUploadProgress({ english: 100, arabic: 28 });
-      await uploadMediaWithProgress({ kind, language: "ar", pairKey, title: title.trim(), fileName: arabicFile.name, mimeType: arabicFile.type, dataBase64: arabicDataBase64, publish }, percent => setUploadProgress({ english: 100, arabic: 25 + Math.round(percent * 0.75) }));
+      await uploadMediaWithProgress({ kind, language: "ar", pairKey, title: title.trim(), fileName: arabicFile.name, mimeType: arabicFile.type, publish }, arabicFile, percent => setUploadProgress({ english: 100, arabic: percent }));
       setUploadProgress({ english: 100, arabic: 100 });
       setTitle("");
       setEnglishFile(null);
