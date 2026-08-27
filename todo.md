@@ -145,3 +145,11 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Fix every reproducible high-impact defect found during the audit without exposing secrets or fabricating review content.
 - [x] Add or update Vitest regression coverage for each corrected defect, including uploaded video source selection and canonical/domain consistency.
 - [x] Run type-check, 13 tests, production build, runtime checks, desktop/mobile screenshots, and save an audit checkpoint.
+
+## IONOS Root and Assets Packaging
+
+- [x] Audit the current Vite production output and distinguish static frontend files from full-stack runtime files.
+- [x] Prepare a static deployment package with root index.html, assets/css, assets/js, assets/images, assets/fonts, favicon, and SPA fallback guidance.
+- [x] Preserve the full-stack source/server package separately so Admin, reviews, database, and media upload features are not misrepresented as static-only.
+- [x] Update IONOS deployment documentation with exact upload locations and runtime requirements.
+- [x] Validate package structure, asset references, build output, and deployment instructions; save a checkpoint.

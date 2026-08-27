@@ -14,7 +14,22 @@ The full-stack deployment requires the platform-provided database, OAuth, JWT, F
 
 ## Static-only deployment
 
-For a static-only host, run `pnpm build` and upload the generated `dist/public` directory to the web root. This serves the public frontend only; reviews, Admin login, uploads, moderation, and database-backed features will not function unless the server API is hosted separately and the frontend is configured to reach it.
+For a static-only host, use the prepared `ppfstudio-ionos-static` package. Upload the **contents** of that package—not the outer folder—into the IONOS domain document root. The resulting structure is:
+
+```text
+/index.html
+/.htaccess
+/favicon.ico
+/robots.txt
+/sitemap.xml
+/assets/css/index-*.css
+/assets/js/index-*.js
+/assets/images/*
+/assets/fonts/README.txt
+/pages/README.txt
+```
+
+The package includes the public frontend, local compiled image assets, favicon, and Apache SPA fallback. It is static-only: genuine reviews, Admin login, media upload/replace, moderation, database access, and S3-backed media require the Node.js full-stack runtime and a separately hosted API. Do not upload only `client/` or only the source `dist/` folder to the web root.
 
 ## Domain
 
