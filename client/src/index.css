@@ -585,6 +585,18 @@ body:not(.no-reveal) .reveal { animation: reveal-in 650ms var(--ease-out) forwar
 .admin-dropzone strong { max-width: 100%; overflow: hidden; color: #f2efe8; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
 .admin-dropzone span { color: #8f9089; font-size: 11px; }
 .admin-dropzone input { display: none; }
+.admin-pair-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 10px 0 18px; }
+.admin-pair-dropzone { min-height: 210px; padding: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1px dashed rgba(217,185,121,.45); background: rgba(0,0,0,.22); color: #d9b979; text-align: center; cursor: pointer; transition: border-color .18s ease, background .18s ease, transform .18s ease; }
+.admin-pair-dropzone:hover, .admin-pair-dropzone:focus-within { border-color: #f0d399; background: rgba(217,185,121,.08); transform: translateY(-2px); }
+.admin-pair-dropzone--selected { border-style: solid; border-color: rgba(124,227,174,.72); background: rgba(124,227,174,.06); }
+.admin-pair-label { align-self: stretch; color: #d9b979; font-size: 10px; letter-spacing: .16em; text-align: left; text-transform: uppercase; }
+.admin-selected-preview { width: 100%; height: 92px; object-fit: cover; border: 1px solid rgba(255,255,255,.14); background: #030403; }
+.admin-pair-dropzone strong { max-width: 100%; overflow: hidden; color: #f2efe8; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.admin-file-meta { max-width: 100%; overflow: hidden; color: #8f9089; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.admin-clear-file { padding: 5px 8px; border: 1px solid rgba(217,185,121,.42); background: transparent; color: #d9b979; cursor: pointer; font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
+.admin-clear-file:hover { border-color: #f0d399; color: #f0d399; }
+.admin-upload-status { margin: 0 0 14px; padding: 10px 12px; border-left: 2px solid #d9b979; background: rgba(217,185,121,.08); color: #d9b979; font-size: 11px; letter-spacing: .05em; }
+.admin-pair-dropzone input { display: none; }
 .admin-check { display: flex; align-items: center; gap: 9px; margin: 0 0 20px; color: #a7a59c; font-size: 12px; }
 .admin-submit { width: 100%; min-height: 46px; border: 1px solid #d9b979; border-radius: 0; background: #d9b979; color: #11120f; text-transform: uppercase; letter-spacing: .08em; }
 .admin-submit:hover { background: #f0d399; }
@@ -612,6 +624,8 @@ body:not(.no-reveal) .reveal { animation: reveal-in 650ms var(--ease-out) forwar
   .admin-hero-stamp span { font-size: 6px; }
   .admin-layout { grid-template-columns: 1fr; }
   .admin-form-grid { grid-template-columns: 1fr; gap: 0; }
+  .admin-pair-grid { grid-template-columns: 1fr 1fr; }
+  .admin-pair-dropzone { min-height: 190px; padding: 11px; }
   .admin-media-item { grid-template-columns: 92px 1fr; }
   .admin-topbar { align-items: flex-start; }
   .admin-top-actions { flex-direction: column; align-items: flex-end; gap: 9px; }

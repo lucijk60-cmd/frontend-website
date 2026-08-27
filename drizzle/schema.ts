@@ -44,6 +44,7 @@ export const adminMedia = mysqlTable("admin_media", {
   id: int("id").autoincrement().primaryKey(),
   kind: mysqlEnum("kind", ["image", "video"]).notNull(),
   language: mysqlEnum("language", ["en", "ar", "shared"]).default("shared").notNull(),
+  pairKey: varchar("pairKey", { length: 96 }),
   title: varchar("title", { length: 180 }).notNull(),
   storageKey: varchar("storageKey", { length: 512 }).notNull(),
   url: varchar("url", { length: 768 }).notNull(),

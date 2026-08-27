@@ -72,3 +72,22 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Fix the authentication/session issue and improve the user-facing error message.
 - [x] Add regression coverage for the corrected login flow.
 - [x] Rebuild, run tests, validate the browser flow, and save a corrective checkpoint.
+
+## Bilingual Media Upload Reliability Update
+
+- [x] Audit current media schema, upload procedure, admin picker, storage URL handling, and public gallery mapping.
+- [x] Define a durable bilingual media pairing model for English and Arabic image/video assets.
+- [x] Update backend procedures and database migration for paired media uploads and retrieval.
+- [x] Rebuild the admin media selector with distinct English and Arabic drop zones, visible selected-file previews, remove/replace controls, and upload progress/status feedback.
+- [x] Ensure video selection shows filename, type, size, thumbnail/poster or playable preview, and clear validation errors.
+- [x] Make save/upload flow sequential per language to avoid oversized dual-video requests and surface server/storage failures.
+- [x] Render uploaded paired media from the database on the public site according to the active English/Arabic language.
+- [x] Add Vitest coverage for upload validation and related admin flows.
+- [ ] Validate a real credentialed admin upload and public language-switch flow in desktop/mobile browsers; type-check/tests/build are complete.
+
+## Admin Media UX History
+
+- [x] Replace the basic single media picker with clear English/Arabic paired upload boxes as requested.
+- [x] Make selected image/video state visually obvious before upload.
+- [x] Diagnose why uploaded media is not appearing publicly and fix the rendering path.
+- [ ] Verify the final upload-to-public-language-switch flow end to end with the owner's private credentials.

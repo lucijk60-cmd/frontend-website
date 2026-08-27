@@ -11,6 +11,8 @@ import { trpc } from "@/lib/trpc";
 type UploadKind = "image" | "video";
 type UploadLanguage = "en" | "ar" | "shared";
 
+type SelectedAsset = File | null;
+
 const copy = {
   en: {
     eyebrow: "PPFSTUDIO / PRIVATE CONTROL ROOM",
@@ -41,7 +43,15 @@ const copy = {
     publish: "Publish",
     unpublish: "Move to draft",
     fileHint: "Images up to 10 MB; MP4, WebM or MOV videos up to 50 MB.",
-    invalid: "Please complete all fields and choose a file.",
+    englishSlot: "English asset",
+    arabicSlot: "Arabic asset",
+    selected: "Selected",
+    clear: "Remove file",
+    uploadingEnglish: "Uploading English asset…",
+    uploadingArabic: "Uploading Arabic asset…",
+    saved: "Both language assets saved successfully.",
+    pairRequired: "Select both English and Arabic files before uploading.",
+    invalid: "Please complete the title and select both language files.",
     success: "Media uploaded successfully.",
     statusUpdated: "Media status updated.",
   },
@@ -74,7 +84,15 @@ const copy = {
     publish: "نشر",
     unpublish: "نقل إلى المسودة",
     fileHint: "الصور حتى 10 ميجابايت؛ فيديو MP4 أو WebM أو MOV حتى 50 ميجابايت.",
-    invalid: "يرجى إكمال الحقول واختيار ملف.",
+    englishSlot: "الملف الإنجليزي",
+    arabicSlot: "الملف العربي",
+    selected: "تم الاختيار",
+    clear: "إزالة الملف",
+    uploadingEnglish: "جارٍ رفع الملف الإنجليزي…",
+    uploadingArabic: "جارٍ رفع الملف العربي…",
+    saved: "تم حفظ ملفي اللغتين بنجاح.",
+    pairRequired: "اختر الملفين الإنجليزي والعربي قبل الرفع.",
+    invalid: "يرجى إدخال العنوان واختيار ملفي اللغتين.",
     success: "تم رفع الوسائط بنجاح.",
     statusUpdated: "تم تحديث حالة الوسائط.",
   },
@@ -96,10 +114,16 @@ export default function Admin() {
   const [authenticated, setAuthenticated] = useState(false);
   const [gateValues, setGateValues] = useState(["", "", "", ""]);
   const [kind, setKind] = useState<UploadKind>("image");
-  const [uploadLanguage, setUploadLanguage] = useState<UploadLanguage>("en");
   const [title, setTitle] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [publish, setPublish] = useState(false);
+  const [englishFile, setEnglishFile] = useState<SelectedAsset>(null);
+  const [arabicFile, setArabicFile] = useState<SelectedAsset>(null);
+  const [publish, setPublish] = useState(true);
+  const [uploadStage, setUploadStage] = useState<"idle" | "english" | "arabic" | "saved">("idle");
+
+  const englishPreview = useMemo(() => englishFile ? URL.createObjectURL(englishFile) : "", [englishFile]);
+  const arabicPreview = useMemo(() => arabicFile ? URL.createObjectURL(arabicFile) : "", [arabicFile]);
+  useEffect(() => () => { if (englishPreview) URL.revokeObjectURL(englishPreview); }, [englishPreview]);
+  useEffect(() => () => { if (arabicPreview) URL.revokeObjectURL(arabicPreview); }, [arabicPreview]);
 
   const mediaQuery = trpc.admin.media.list.useQuery(undefined, { enabled: authenticated, retry: false });
   const verifyGate = trpc.admin.verifyGate.useMutation({
@@ -117,13 +141,6 @@ export default function Admin() {
     ),
   });
   const uploadMedia = trpc.admin.media.upload.useMutation({
-    onSuccess: () => {
-      setTitle("");
-      setFile(null);
-      setPublish(false);
-      toast.success(c.success);
-      void mediaQuery.refetch();
-    },
     onError: (error) => toast.error(error.message),
   });
   const updateStatus = trpc.admin.media.setStatus.useMutation({
@@ -144,7 +161,7 @@ export default function Admin() {
     if (mediaQuery.data) setAuthenticated(true);
   }, [mediaQuery.data]);
 
-  const canSubmit = useMemo(() => Boolean(title.trim() && file), [title, file]);
+  const canSubmit = useMemo(() => Boolean(title.trim() && englishFile && arabicFile), [title, englishFile, arabicFile]);
 
   const submitGate = (event: React.FormEvent) => {
     event.preventDefault();
@@ -162,20 +179,29 @@ export default function Admin() {
 
   const submitUpload = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!file || !canSubmit) {
+    if (!englishFile || !arabicFile || !canSubmit) {
       toast.error(c.invalid);
       return;
     }
-    const dataBase64 = await readFileAsBase64(file);
-    uploadMedia.mutate({
-      kind,
-      language: uploadLanguage,
-      title: title.trim(),
-      fileName: file.name,
-      mimeType: file.type,
-      dataBase64,
-      publish,
-    });
+    const pairKey = `ppfstudio-${Date.now()}-${window.crypto.randomUUID().slice(0, 8)}`;
+    try {
+      setUploadStage("english");
+      const englishDataBase64 = await readFileAsBase64(englishFile);
+      await uploadMedia.mutateAsync({ kind, language: "en", pairKey, title: title.trim(), fileName: englishFile.name, mimeType: englishFile.type, dataBase64: englishDataBase64, publish });
+      setUploadStage("arabic");
+      const arabicDataBase64 = await readFileAsBase64(arabicFile);
+      await uploadMedia.mutateAsync({ kind, language: "ar", pairKey, title: title.trim(), fileName: arabicFile.name, mimeType: arabicFile.type, dataBase64: arabicDataBase64, publish });
+      setTitle("");
+      setEnglishFile(null);
+      setArabicFile(null);
+      setPublish(true);
+      setUploadStage("saved");
+      toast.success(c.saved);
+      void mediaQuery.refetch();
+    } catch {
+      setUploadStage("idle");
+      toast.error(language === "ar" ? "تعذر رفع الملفين. تحقق من النوع والحجم وحاول مرة أخرى." : "Upload failed. Check both file types and sizes, then try again.");
+    }
   };
 
   if (!authenticated) {
@@ -204,12 +230,24 @@ export default function Admin() {
         <form className="admin-upload-card" onSubmit={submitUpload}>
           <div className="admin-card-heading"><span className="admin-index">01</span><h2>{c.uploadTitle}</h2></div>
           <div className="admin-form-grid">
-            <div className="admin-field"><Label>{c.kind}</Label><Select value={kind} onValueChange={(value: UploadKind) => setKind(value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="image"><FileImage size={15} /> {c.image}</SelectItem><SelectItem value="video"><Film size={15} /> {c.video}</SelectItem></SelectContent></Select></div>
-            <div className="admin-field"><Label>{c.language}</Label><Select value={uploadLanguage} onValueChange={(value: UploadLanguage) => setUploadLanguage(value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="en">{c.english}</SelectItem><SelectItem value="ar">{c.arabic}</SelectItem><SelectItem value="shared">{c.shared}</SelectItem></SelectContent></Select></div>
-          </div>
+            <div className="admin-field"><Label>{c.kind}</Label><Select value={kind} onValueChange={(value: UploadKind) => { setKind(value); setEnglishFile(null); setArabicFile(null); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="image"><FileImage size={15} /> {c.image}</SelectItem><SelectItem value="video"><Film size={15} /> {c.video}</SelectItem></SelectContent></Select></div>
+            </div>
           <div className="admin-field"><Label htmlFor="asset-title">{c.titleLabel}</Label><Input id="asset-title" value={title} onChange={event => setTitle(event.target.value)} placeholder="e.g. Full body PPF / حماية كاملة" maxLength={180} /></div>
-          <label className="admin-dropzone" htmlFor="admin-file"><Upload size={22} /><strong>{file ? file.name : c.file}</strong><span>{c.fileHint}</span><input id="admin-file" type="file" accept={kind === "image" ? "image/jpeg,image/png,image/webp,image/avif" : "video/mp4,video/webm,video/quicktime"} onChange={event => setFile(event.target.files?.[0] ?? null)} /></label>
+          <div className="admin-pair-grid">
+            {([ ["en", c.englishSlot, englishFile, englishPreview, setEnglishFile], ["ar", c.arabicSlot, arabicFile, arabicPreview, setArabicFile] ] as const).map(([slot, label, selectedFile, preview, setSelectedFile]) => (
+              <label className={`admin-pair-dropzone ${selectedFile ? "admin-pair-dropzone--selected" : ""}`} htmlFor={`admin-${slot}-file`} key={slot}>
+                <span className="admin-pair-label">{label}</span>
+                {selectedFile && kind === "image" && <img src={preview} alt="" className="admin-selected-preview" />}
+                {selectedFile && kind === "video" && <video src={preview} className="admin-selected-preview" muted preload="metadata" />}
+                <strong>{selectedFile ? selectedFile.name : c.file}</strong>
+                <span className="admin-file-meta">{selectedFile ? `${c.selected} · ${selectedFile.type || "unknown type"} · ${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : c.fileHint}</span>
+                <input id={`admin-${slot}-file`} type="file" accept={kind === "image" ? "image/jpeg,image/png,image/webp,image/avif" : "video/mp4,video/webm,video/quicktime"} onChange={event => setSelectedFile(event.target.files?.[0] ?? null)} />
+                {selectedFile && <button type="button" className="admin-clear-file" onClick={event => { event.preventDefault(); event.stopPropagation(); setSelectedFile(null); }}>{c.clear}</button>}
+              </label>
+            ))}
+          </div>
           <label className="admin-check"><input type="checkbox" checked={publish} onChange={event => setPublish(event.target.checked)} /><span>{c.publishNow}</span></label>
+          {uploadStage !== "idle" && <div className="admin-upload-status" aria-live="polite">{uploadStage === "english" ? c.uploadingEnglish : uploadStage === "arabic" ? c.uploadingArabic : c.saved}</div>}
           <Button type="submit" className="admin-submit" disabled={uploadMedia.isPending || !canSubmit}><Upload size={16} /> {uploadMedia.isPending ? "…" : c.upload}</Button>
         </form>
         <section className="admin-library-card"><div className="admin-card-heading"><span className="admin-index">02</span><h2>{c.library}</h2></div>{mediaQuery.isLoading ? <div className="admin-empty">…</div> : mediaQuery.data?.length ? <div className="admin-media-list">{mediaQuery.data.map(item => <article className="admin-media-item" key={item.id}><div className="admin-media-preview">{item.kind === "image" ? <img src={item.url} alt={item.title} /> : <video src={item.url} controls preload="metadata" />}</div><div className="admin-media-meta"><strong>{item.title}</strong><span>{item.language.toUpperCase()} · {item.kind.toUpperCase()}</span><span className={`admin-status admin-status--${item.status}`}>{item.status === "published" ? c.published : c.draft}</span><button className="admin-status-button" onClick={() => updateStatus.mutate({ id: item.id, status: item.status === "published" ? "draft" : "published" })}>{item.status === "published" ? c.unpublish : c.publish}</button></div></article>)}</div> : <div className="admin-empty"><X size={18} />{c.empty}</div>}</section>

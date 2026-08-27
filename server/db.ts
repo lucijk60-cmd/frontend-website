@@ -146,6 +146,14 @@ export async function createAdminMedia(media: InsertAdminMedia) {
   return { id: result.insertId };
 }
 
+export async function createAdminMediaPair(media: InsertAdminMedia[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  if (!media.length) throw new Error("At least one media asset is required");
+  await db.insert(adminMedia).values(media);
+  return { count: media.length };
+}
+
 export async function getAdminMedia(limit = 100) {
   const db = await getDb();
   if (!db) return [] as AdminMedia[];

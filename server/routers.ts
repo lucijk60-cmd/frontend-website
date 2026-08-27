@@ -1,11 +1,12 @@
 import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
+import { randomUUID } from "node:crypto";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, adminSessionProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { clearAdminSessionCookie, createAdminSession, setAdminSessionCookie, verifyAdminCredentials } from "./adminAuth";
-import { createAdminMedia, getAdminMedia, getPublishedAdminMedia, updateAdminMediaStatus } from "./db";
+import { createAdminMedia, createAdminMediaPair, getAdminMedia, getPublishedAdminMedia, updateAdminMediaStatus } from "./db";
 import { storagePut } from "./storage";
 import { createReview, getApprovedReviewCount, getApprovedReviews, getPendingReviews, hasDuplicateReview, updateReviewStatus } from "./db";
 
@@ -44,6 +45,7 @@ function sanitizeFileName(fileName: string) {
 const uploadInput = z.object({
   kind: z.enum(["image", "video"]),
   language: z.enum(["en", "ar", "shared"]),
+  pairKey: z.string().trim().min(8).max(96).optional(),
   title: z.string().trim().min(2).max(180),
   fileName: z.string().min(1).max(180).regex(/^[^\\/\\\\]+\\.[a-zA-Z0-9]{2,5}$/, "A valid file extension is required."),
   mimeType: z.string().min(3).max(120),
@@ -51,7 +53,21 @@ const uploadInput = z.object({
   publish: z.boolean().default(false),
 });
 
-function validateUpload(input: z.infer<typeof uploadInput>, byteLength: number) {
+const pairedAssetInput = z.object({
+  fileName: z.string().min(1).max(180).regex(/^[^\\/\\\\]+\\.[a-zA-Z0-9]{2,5}$/, "A valid file extension is required."),
+  mimeType: z.string().min(3).max(120),
+  dataBase64: z.string().min(20).max(42_000_000),
+});
+
+const pairedUploadInput = z.object({
+  kind: z.enum(["image", "video"]),
+  title: z.string().trim().min(2).max(180),
+  english: pairedAssetInput.optional(),
+  arabic: pairedAssetInput.optional(),
+  publish: z.boolean().default(false),
+}).refine(input => Boolean(input.english || input.arabic), { message: "Select an English or Arabic asset before uploading." });
+
+export function validateUpload(input: z.infer<typeof uploadInput>, byteLength: number) {
   const imageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
   const videoTypes = new Set(["video/mp4", "video/webm", "video/quicktime"]);
   const extension = input.fileName.split(".").pop()?.toLowerCase();
@@ -103,14 +119,30 @@ export const appRouter = router({
     media: router({
       published: publicProcedure.query(() => getPublishedAdminMedia()),
       list: adminSessionProcedure.query(() => getAdminMedia()),
+      uploadPair: adminSessionProcedure.input(pairedUploadInput).mutation(async ({ input }) => {
+        const pairKey = `ppfstudio-${Date.now()}-${randomUUID().slice(0, 8)}`;
+        const assets = ([{ language: "en" as const, file: input.english }, { language: "ar" as const, file: input.arabic }])
+          .filter((entry): entry is { language: "en" | "ar"; file: z.infer<typeof pairedAssetInput> } => Boolean(entry.file));
+        const rows = [];
+        for (const asset of assets) {
+          const buffer = Buffer.from(asset.file.dataBase64, "base64");
+          const singleInput = { ...asset.file, kind: input.kind, language: asset.language, title: input.title, publish: input.publish };
+          validateUpload(singleInput, buffer.byteLength);
+          const storagePath = `admin-media/${input.kind}/${asset.language}/${pairKey}-${sanitizeFileName(asset.file.fileName)}`;
+          const stored = await storagePut(storagePath, buffer, asset.file.mimeType);
+          rows.push({ kind: input.kind, language: asset.language, pairKey, title: input.title, storageKey: stored.key, url: stored.url, mimeType: asset.file.mimeType, sizeBytes: buffer.byteLength, status: input.publish ? "published" as const : "draft" as const });
+        }
+        return createAdminMediaPair(rows);
+      }),
       upload: adminSessionProcedure.input(uploadInput).mutation(async ({ input }) => {
         const buffer = Buffer.from(input.dataBase64, "base64");
         validateUpload(input, buffer.byteLength);
-        const storagePath = `admin-media/${input.kind}/${input.language}/${Date.now()}-${sanitizeFileName(input.fileName)}`;
+        const storagePath = `admin-media/${input.kind}/${input.language}/${input.pairKey ? `${input.pairKey}-` : ""}${Date.now()}-${sanitizeFileName(input.fileName)}`;
         const stored = await storagePut(storagePath, buffer, input.mimeType);
         const result = await createAdminMedia({
           kind: input.kind,
           language: input.language,
+          pairKey: input.pairKey,
           title: input.title,
           storageKey: stored.key,
           url: stored.url,
