@@ -1,10 +1,10 @@
 # Image Localization Update
 
-## Additional Arabic and English Images
+## Additional Four-Panel Arabic and English Image
 
-- [x] Prepare the two newly provided English images for web use.
-- [x] Create faithful Arabic localized variants with preserved visuals and layout.
-- [x] Add the new bilingual image mappings to centralized configuration.
-- [x] Show the correct variant for the selected language in the gallery.
+- [x] Prepare the newly provided English infographic for web use.
+- [x] Create a faithful Arabic localized variant with the same four-panel composition.
+- [x] Add English and Arabic asset mapping to centralized gallery configuration.
+- [x] Render the correct variant based on the selected language.
 - [x] Verify desktop/mobile presentation and run the production build.
 - [x] Save and deliver the updated checkpoint.

@@ -32,6 +32,8 @@ export const images = {
   beforeAfterRollsArabic: "/manus-storage/ppf-before-after-rolls-ar_39628be9.png",
   premiumProtectionEnglish: "/manus-storage/ppf-premium-protection-en_71f2cef3.png",
   premiumProtectionArabic: "/manus-storage/ppf-premium-protection-ar_b59e9cda.png",
+  beforeProtectionAfterEnglish: "/manus-storage/ppf-before-protection-after-en_fef2eab0.png",
+  beforeProtectionAfterArabic: "/manus-storage/ppf-before-protection-after-ar_d6d869c9.png",
 };
 
 export const translations = {
@@ -79,7 +81,7 @@ export const translations = {
     workTitle: "The finish is the proof.",
     workBody: "Explore a selection of recent protection projects, from full-body coverage to precise front-end work.",
     filters: ["All", "Full Body PPF", "Front PPF", "Luxury Cars", "SUV", "Before & After", "Installation"],
-    galleryLabels: ["Full Body PPF", "Luxury Cars", "SUV", "Installation", "Before & After", "Front PPF", "Protection Guide", "PPF Explained", "Paint Correction", "Premium Protection"],
+    galleryLabels: ["Full Body PPF", "Luxury Cars", "SUV", "Installation", "Before & After", "Front PPF", "Protection Guide", "PPF Explained", "Paint Correction", "Premium Protection", "Protection Journey"],
     beforeEyebrow: "03 / THE DIFFERENCE",
     beforeTitle: "Before & after",
     beforeBody: "Drag across the finish to see how invisible protection keeps the original surface looking untouched.",
@@ -177,7 +179,7 @@ export const translations = {
     workTitle: "النتيجة هي الدليل.",
     workBody: "استكشف مجموعة من مشاريع حماية السيارات، من التغطية الكاملة إلى حماية الواجهة الأمامية بدقة.",
     filters: ["الكل", "PPF كامل", "الواجهة الأمامية", "سيارات فاخرة", "SUV", "قبل وبعد", "تركيب"],
-    galleryLabels: ["PPF كامل", "سيارات فاخرة", "SUV", "تركيب", "قبل وبعد", "الواجهة الأمامية", "دليل الحماية", "ما هو PPF؟", "تصحيح الطلاء", "حماية فاخرة"],
+    galleryLabels: ["PPF كامل", "سيارات فاخرة", "SUV", "تركيب", "قبل وبعد", "الواجهة الأمامية", "دليل الحماية", "ما هو PPF؟", "تصحيح الطلاء", "حماية فاخرة", "رحلة الحماية"],
     beforeEyebrow: "03 / الفرق الواضح",
     beforeTitle: "قبل وبعد",
     beforeBody: "اسحب عبر السطح لترى كيف تحافظ الحماية غير المرئية على مظهر الطلاء الأصلي.",
@@ -246,6 +248,7 @@ export const galleryItems = [
   { id: 8, category: "Installation", src: images.definitionEnglish, arSrc: images.definitionArabic, alt: "PPF definition over a red luxury car during film installation", arAlt: "شرح معنى PPF فوق سيارة فاخرة حمراء أثناء تركيب الفيلم" },
   { id: 9, category: "Before & After", src: images.beforeAfterRollsEnglish, arSrc: images.beforeAfterRollsArabic, alt: "Before and after comparison of visible paint imperfections and professional PPF installation", arAlt: "مقارنة قبل وبعد بين عيوب الطلاء الظاهرة وتركيب PPF الاحترافي" },
   { id: 10, category: "Full Body PPF", src: images.premiumProtectionEnglish, arSrc: images.premiumProtectionArabic, alt: "Premium car protected inside a transparent protective dome", arAlt: "سيارة فاخرة محمية داخل قبة حماية شفافة" },
+  { id: 11, category: "Installation", src: images.beforeProtectionAfterEnglish, arSrc: images.beforeProtectionAfterArabic, alt: "Four-panel journey from pristine paint through road risks and professional PPF installation to a protected glossy finish", arAlt: "رحلة من أربع لوحات تبدأ بطلاء أصلي مروراً بمخاطر الطريق وتركيب PPF الاحترافي وتنتهي بلمعان محمي" },
 ] as const;
 
 export const videoItems = [
