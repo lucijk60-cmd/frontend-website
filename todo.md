@@ -231,3 +231,9 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Re-audit the current review submit, database insert, status lookup, and public/admin refresh code.
 - [x] Apply any required persistence and user-facing status fixes without bypassing moderation safeguards.
 - [x] Add/update regression tests, run migration checks, type-check, build, responsive verification, and save a checkpoint.
+
+## Dependency Build Script Warning
+
+- [x] Audit pnpm ignored build scripts and project package-manager configuration.
+- [x] Approve or configure only required trusted build scripts without changing application behavior.
+- [x] Run clean dependency validation, tests, type-check, production build, and save a checkpoint if changes are needed.
