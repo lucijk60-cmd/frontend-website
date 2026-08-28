@@ -161,3 +161,42 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Add a visible static fallback/error page and deployment diagnostics so missing JavaScript or API runtime is understandable.
 - [x] Keep Node.js, database, storage, and admin requirements isolated in the full-stack deployment package and documentation.
 - [x] Validate converted files, asset paths, archive integrity, browser rendering, and save a checkpoint.
+
+## GitHub Asset Synchronization Verification
+
+- [x] Check the latest GitHub commit and branch for `lucijk60-cmd/frontend-website`.
+- [x] Compare repository tree contents for image/banner files, video files, and external storage references.
+- [x] Compare local project revision with GitHub and identify whether recent checkpoint changes are synced.
+- [x] Report clearly which assets are in GitHub and which remain in S3/external storage; do not push media without user confirmation.
+
+## GitHub Static Media Sync
+
+- [x] Inventory all currently used static logo, hero, banner, gallery, and bilingual infographic assets.
+- [x] Copy the current static assets into the repository under public/assets/images with stable safe filenames.
+- [x] Add any current static video files only when they exist locally and are within safe repository limits; keep S3-only uploads documented separately.
+- [x] Keep existing source storage references intact and document repository-relative static media paths separately, avoiding breakage to Manus storage URLs.
+- [x] Validate file inventory and commit/push the approved static assets to the frontend-website main branch.
+
+## Local Project Image and Banner Sync
+
+- [x] Inventory every image and banner file available in the current local project and generated static package.
+- [x] Compare the inventory with existing GitHub media files and avoid duplicate or unrelated files.
+- [x] Sync all current image/banner binaries into the GitHub repository with safe filenames and a clear folder manifest.
+- [x] Verify remote commit, file count, sizes, and integrity; keep dynamic S3-only video/media documented separately.
+
+## GitHub Image Link and Load Verification
+
+- [x] Collect direct GitHub URLs for all 17 image/banner files.
+- [x] Test every URL for HTTP success, content type, non-empty bytes, and image integrity.
+- [x] Cross-check the website/static package paths against the GitHub-hosted files and rendered loading behavior.
+- [x] Deliver the complete link list and verification results without changing runtime references unexpectedly.
+
+## User-Provided Bilingual Reviews
+
+- [x] Audit the current review schema, moderation procedures, and language display mapping.
+- [x] Translate the five user-provided English reviews into natural Arabic without changing their meaning.
+- [x] Save the English originals and Arabic translations as paired genuine review records with approved/pending status consistent with the existing review policy.
+- [x] Ensure English and Arabic panels display the matching language text with correct LTR/RTL behavior.
+- [x] Add regression coverage, run tests/build, and save a checkpoint.
+
+- [x] Use `Anonymous` as the reviewer name for these five user-provided reviews, as confirmed by the user.

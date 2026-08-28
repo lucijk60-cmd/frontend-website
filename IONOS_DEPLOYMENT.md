@@ -16,6 +16,8 @@ For an IONOS Node.js application, use Node.js 20 or newer, set the project root 
 
 ## Static-only deployment
 
+The GitHub copies under `public/assets/images` are repository-managed static copies for source control and archival deployment use. The active Manus full-stack runtime continues to use its S3/Manus storage URLs for managed Admin uploads; do not replace those `/manus-storage/...` references with raw GitHub URLs unless you intentionally want GitHub to become the runtime CDN.
+
 For a static-only host, use the prepared `ppfstudio-ionos-static` package. Upload the **contents** of that package—not the outer folder—into the IONOS domain document root. The resulting structure is:
 
 ```text

@@ -31,6 +31,7 @@ export const reviews = mysqlTable("reviews", {
   vehicle: varchar("vehicle", { length: 120 }),
   rating: int("rating").notNull(),
   review: text("review").notNull(),
+  reviewAr: text("reviewAr"),
   status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   moderatedAt: timestamp("moderatedAt"),
