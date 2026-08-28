@@ -208,3 +208,13 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Keep media bytes in WebDev storage and avoid oversized repository binaries.
 - [x] Add regression coverage, run type-check/tests/build, verify responsive rendering, and save a checkpoint.
 - [x] Use a non-video poster image for uploaded video cards so video URLs are never rendered through `<img>` before playback.
+
+## Review Submission Not Appearing
+
+- [x] Trace visitor review submission from form mutation through database persistence, moderation status, query cache invalidation, and public count/list rendering.
+- [x] Fix the root cause without bypassing genuine-review moderation safeguards.
+- [x] Add regression coverage and validate the submission flow with type-check, tests, build, and responsive verification.
+- [x] Add a focused regression test for pending review submission feedback and retrieval behavior.
+- [x] Verify the public pending/public-approved retrieval contract and document that owner credentialed browser submission smoke testing remains recommended.
+- [x] Add visible pending-state guidance near the review count/list so visitors understand moderation timing.
+- [x] Cover the user-facing saved/pending message with a focused unit test and document the credentialed owner smoke-test limitation.

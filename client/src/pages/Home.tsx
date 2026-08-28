@@ -31,7 +31,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { selectPublishedMedia, selectVideoSource } from "@/lib/media";
-import { getLocalizedReviewText } from "@/lib/reviews";
+import { getLocalizedReviewText, getReviewSubmissionNotice } from "@/lib/reviews";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   BRAND_NAME,
@@ -128,6 +128,7 @@ export default function Home() {
   const [reviewVehicle, setReviewVehicle] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
+  const [reviewSubmittedNotice, setReviewSubmittedNotice] = useState(false);
   const statsRef = useRef<HTMLElement | null>(null);
   const c: Content = translations[language];
   const isArabic = language === "ar";
@@ -144,13 +145,15 @@ export default function Home() {
     onError: (error) => toast.error(error.message),
   });
   const submitReview = trpc.reviews.submit.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
+      await Promise.all([trpcUtils.reviews.list.invalidate(), trpcUtils.reviews.pending.invalidate()]);
       setReviewName("");
       setReviewVehicle("");
       setReviewRating(5);
       setReviewText("");
       setReviewFormOpen(false);
-      toast.success(c.reviewPending);
+      setReviewSubmittedNotice(true);
+      toast.success(getReviewSubmissionNotice(language));
     },
     onError: (error) => toast.error(error.message),
   });
@@ -379,6 +382,7 @@ export default function Home() {
         <section className="section testimonials-section page-width">
           <div className="reviews-heading-row"><Reveal><SectionHeader eyebrow={c.testimonialsEyebrow} title={c.testimonialsTitle} /></Reveal><Reveal delay={80} className="reviews-actions"><button className="review-count-button" onClick={() => setReviewsOpen(true)} aria-label={c.reviewOpen}><strong>{reviewsQuery.data?.total ?? 0}</strong><span>{c.reviewCountLabel}</span><ArrowUpRight size={17} /></button><button className="button button--line review-submit-button" onClick={() => setReviewFormOpen(true)}><Plus size={16} />{c.reviewFormSubmit}</button></Reveal></div>
           <p className="review-moderation-note">{c.reviewModeratedNote}</p>
+          {reviewSubmittedNotice && <p className="review-submission-notice" aria-live="polite">{getReviewSubmissionNotice(language)}</p>}
           {reviewsQuery.isLoading ? <div className="review-empty-state">{isArabic ? "جارٍ تحميل المراجعات..." : "Loading approved reviews..."}</div> : <div className="testimonial-grid">{(reviewsQuery.data?.items ?? []).slice(0, 3).map((review, index) => <Reveal key={review.id} delay={index * 65} className="testimonial-card"><div className="testimonial-top"><div className="stars">{[0, 1, 2, 3, 4].map((star) => <Star key={star} size={13} fill={star < review.rating ? "currentColor" : "none"} />)}</div><span>{review.rating}.0</span></div><p>“{getLocalizedReviewText(review, language)}”</p><div className="testimonial-person"><span className="testimonial-avatar">{review.name.charAt(0).toUpperCase()}</span><span><strong>{review.name}</strong><small>{review.vehicle || (isArabic ? "عميل" : "Client")}</small></span></div></Reveal>)}</div>}
           {!reviewsQuery.isLoading && (reviewsQuery.data?.items.length ?? 0) === 0 && <div className="review-empty-state">{c.reviewEmpty}</div>}
         </section>

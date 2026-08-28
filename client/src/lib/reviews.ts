@@ -6,3 +6,9 @@ type LocalizedReview = {
 export function getLocalizedReviewText(review: LocalizedReview, language: "en" | "ar") {
   return language === "ar" ? review.reviewAr?.trim() || review.review : review.review;
 }
+
+export function getReviewSubmissionNotice(language: "en" | "ar") {
+  return language === "ar"
+    ? "تم حفظ مراجعتك بنجاح، وهي بانتظار الموافقة قبل نشرها."
+    : "Saved successfully. Your review is awaiting approval before publication.";
+}

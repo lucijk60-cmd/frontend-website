@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getLocalizedReviewText } from "./reviews";
+import { getLocalizedReviewText, getReviewSubmissionNotice } from "./reviews";
 
 describe("getLocalizedReviewText", () => {
   const review = {
@@ -17,5 +17,10 @@ describe("getLocalizedReviewText", () => {
 
   it("falls back to English when Arabic text is unavailable", () => {
     expect(getLocalizedReviewText({ review: review.review, reviewAr: "  " }, "ar")).toBe(review.review);
+  });
+
+  it("returns explicit saved-and-pending feedback in both languages", () => {
+    expect(getReviewSubmissionNotice("en")).toContain("Saved successfully");
+    expect(getReviewSubmissionNotice("ar")).toContain("تم حفظ مراجعتك بنجاح");
   });
 });

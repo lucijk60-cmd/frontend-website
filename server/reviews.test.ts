@@ -28,5 +28,13 @@ describe("reviews", () => {
     expect(result).toHaveProperty("total");
     expect(result.total).toBeTypeOf("number");
     expect(result.items).toBeInstanceOf(Array);
+    expect(result.items.every((review) => review.status === "approved")).toBe(true);
+  });
+
+  it("keeps pending submissions out of the public review collection", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    const result = await caller.reviews.list({ limit: 50, offset: 0 });
+
+    expect(result.items.some((review) => review.status === "pending")).toBe(false);
   });
 });
