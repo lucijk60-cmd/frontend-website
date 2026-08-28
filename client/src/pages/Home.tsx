@@ -211,9 +211,9 @@ export default function Home() {
     return [...staticItems, ...uploadedItems];
   }, [isArabic, language, publishedMediaQuery.data]);
   const videoDisplayItems = useMemo(() => {
-    const staticVideos = videoItems.map(item => ({ ...item, isUploaded: false }));
+    const staticVideos = videoItems.map(item => ({ ...item, poster: item.src, isUploaded: false }));
     const uploadedVideos = selectPublishedMedia(publishedMediaQuery.data ?? [], language, "video")
-      .map((item) => ({ title: item.title, src: item.url, isUploaded: true }));
+      .map((item) => ({ title: item.title, src: item.url, poster: images.galleryCoupe, isUploaded: true }));
     return [...staticVideos, ...uploadedVideos];
   }, [language, publishedMediaQuery.data]);
   const filteredGallery = useMemo(() => {
@@ -284,7 +284,7 @@ export default function Home() {
 
       <main>
         <section id="home" className="hero-section">
-          <img src={images.hero} alt="Black sports coupe receiving precision paint protection film installation" className="hero-image" fetchPriority="high" />
+          <img src={images.hero} alt="Black sports coupe receiving precision paint protection film installation" className="hero-image" fetchPriority="high" decoding="async" />
           <div className="hero-overlay" />
           <div className="hero-grid-lines" />
           <div className="hero-content page-width">
@@ -342,7 +342,7 @@ export default function Home() {
           <div className="gallery-grid">
             {filteredGallery.map((item, index) => {
               const originalIndex = localizedGalleryItems.findIndex((galleryItem) => galleryItem.id === item.id);
-              return <Reveal key={item.id} delay={index * 55} className={`gallery-card gallery-card--${item.id}`}><button onClick={() => setLightboxIndex(originalIndex)} aria-label={`${c.openImage}: ${item.alt}`}><img src={item.src} alt={item.alt} loading="lazy" /><span className="gallery-shade" /><span className="gallery-meta"><span>0{item.id}</span><strong>{c.galleryLabels[localizedGalleryItems.findIndex((galleryItem) => galleryItem.id === item.id)]}</strong><ArrowUpRight size={18} /></span></button></Reveal>;
+              return <Reveal key={item.id} delay={index * 55} className={`gallery-card gallery-card--${item.id}`}><button onClick={() => setLightboxIndex(originalIndex)} aria-label={`${c.openImage}: ${item.alt}`}><img src={item.src} alt={item.alt} loading="lazy" decoding="async" sizes="(max-width: 720px) 100vw, 50vw" /><span className="gallery-shade" /><span className="gallery-meta"><span>0{item.id}</span><strong>{c.galleryLabels[localizedGalleryItems.findIndex((galleryItem) => galleryItem.id === item.id)]}</strong><ArrowUpRight size={18} /></span></button></Reveal>;
             })}
           </div>
         </section>
@@ -351,8 +351,8 @@ export default function Home() {
           <div className="comparison-copy"><Reveal><SectionHeader eyebrow={c.beforeEyebrow} title={c.beforeTitle} body={c.beforeBody} /></Reveal><Reveal delay={100} className="comparison-instruction"><MoveHorizontal size={20} /><span>{isArabic ? "اسحب للمقارنة" : "Drag to compare"}</span></Reveal></div>
           <Reveal delay={100} className="comparison-frame">
             <div className="comparison-stage">
-              <img src={images.secondaryDetail} alt={c.afterLabel} className="comparison-image comparison-image--after" loading="lazy" />
-              <div className="comparison-before" style={{ width: `${comparison}%` }}><img src={images.detailSuv} alt={c.beforeLabel} className="comparison-image" loading="lazy" /></div>
+              <img src={images.secondaryDetail} alt={c.afterLabel} className="comparison-image comparison-image--after" loading="lazy" decoding="async" />
+              <div className="comparison-before" style={{ width: `${comparison}%` }}><img src={images.detailSuv} alt={c.beforeLabel} className="comparison-image" loading="lazy" decoding="async" /></div>
               <div className="comparison-divider" style={{ left: `${comparison}%` }}><span /></div>
               <span className="comparison-label comparison-label--before">{c.beforeLabel}</span><span className="comparison-label comparison-label--after">{c.afterLabel}</span>
             </div>
@@ -361,7 +361,7 @@ export default function Home() {
         </section>
 
         <section className="section video-section">
-          <div className="page-width"><Reveal><SectionHeader eyebrow={c.videoEyebrow} title={c.videoTitle} body={c.videoBody} /></Reveal><div className="video-grid">{videoDisplayItems.map((item, index) => <Reveal key={`${item.title}-${index}`} delay={index * 55} className="video-card"><button onClick={() => setVideoIndex(index)} aria-label={`${c.playVideo}: ${item.title}`}><img src={item.src} alt="" loading="lazy" /><span className="video-shade" /><span className="video-play"><CirclePlay size={42} strokeWidth={1.2} /></span><span className="video-label"><span>0{index + 1}</span>{item.title}</span></button></Reveal>)}</div></div>
+          <div className="page-width"><Reveal><SectionHeader eyebrow={c.videoEyebrow} title={c.videoTitle} body={c.videoBody} /></Reveal><div className="video-grid">{videoDisplayItems.map((item, index) => <Reveal key={`${item.title}-${index}`} delay={index * 55} className="video-card"><button onClick={() => setVideoIndex(index)} aria-label={`${c.playVideo}: ${item.title}`}><img src={item.poster} alt="" loading="lazy" decoding="async" sizes="(max-width: 720px) 100vw, 50vw" /><span className="video-shade" /><span className="video-play"><CirclePlay size={42} strokeWidth={1.2} /></span><span className="video-label"><span>0{index + 1}</span>{item.title}</span></button></Reveal>)}</div></div>
         </section>
 
         <section id="process" className="section process-section page-width">
@@ -370,7 +370,7 @@ export default function Home() {
         </section>
 
         <section id="about" className="quality-section">
-          <div className="quality-image-wrap"><img src={images.installation} alt="Precision PPF installation in a controlled studio" loading="lazy" /><div className="quality-image-caption"><span>07</span><span>{isArabic ? "المواد / التركيب" : "MATERIAL / INSTALL"}</span></div></div>
+          <div className="quality-image-wrap"><img src={images.installation} alt="Precision PPF installation in a controlled studio" loading="lazy" decoding="async" /><div className="quality-image-caption"><span>07</span><span>{isArabic ? "المواد / التركيب" : "MATERIAL / INSTALL"}</span></div></div>
           <div className="quality-content"><Reveal><SectionHeader eyebrow={c.qualityEyebrow} title={c.qualityTitle} body={c.qualityBody} /></Reveal><Reveal delay={100} className="quality-list">{c.qualityFeatures.map((feature, index) => <div className="quality-item" key={feature}><span>0{index + 1}</span><Check size={16} /><strong>{feature}</strong></div>)}</Reveal><Reveal delay={180}><button className="text-link" onClick={() => scrollToSection("contact")}>{isArabic ? "تحدث مع فريقنا" : "Talk to our team"}<ArrowUpRight size={16} /></button></Reveal></div>
         </section>
 
@@ -386,7 +386,7 @@ export default function Home() {
         {user?.role === "admin" && <section className="admin-review-panel page-width"><div className="admin-review-heading"><span className="eyebrow"><span className="eyebrow-rule" />{c.reviewModerationTitle}</span><span>{pendingReviewsQuery.data?.length ?? 0}</span></div>{(pendingReviewsQuery.data ?? []).map((review) => <article className="admin-review-item" key={review.id}><div><strong>{review.name}</strong><small>{review.vehicle || (isArabic ? "عميل" : "Client")} · {review.rating}/5</small><p>{getLocalizedReviewText(review, language)}</p></div><div className="admin-review-actions"><button className="button button--gold" onClick={() => moderateReview.mutate({ id: review.id, status: "approved" })}>{c.reviewApprove}</button><button className="button button--line" onClick={() => moderateReview.mutate({ id: review.id, status: "rejected" })}>{c.reviewReject}</button></div></article>)}{!pendingReviewsQuery.isLoading && (pendingReviewsQuery.data?.length ?? 0) === 0 && <p className="review-empty-state">{c.reviewAdminEmpty}</p>}</section>}
 
         <section id="contact" className="closing-cta">
-          <div className="closing-image"><img src={images.hero} alt="Luxury vehicle protected with clear PPF" loading="lazy" /><div className="closing-shade" /></div>
+          <div className="closing-image"><img src={images.hero} alt="Luxury vehicle protected with clear PPF" loading="lazy" decoding="async" /><div className="closing-shade" /></div>
           <div className="closing-content page-width"><Reveal><div className="eyebrow eyebrow--light"><span className="eyebrow-rule" />{c.contactEyebrow}</div><h2>{c.contactTitle}</h2><p>{c.contactBody}</p><WhatsAppLink language={language} className="button button--gold">{c.ctaButton}</WhatsAppLink></Reveal><div className="closing-contact"><span>{c.contactLabel}</span><a href={whatsappHref(language)} target="_blank" rel="noreferrer">{WHATSAPP_DISPLAY}</a></div></div>
         </section>
       </main>
@@ -400,7 +400,7 @@ export default function Home() {
       </Dialog>
 
       <Dialog open={videoIndex !== null} onOpenChange={(open) => !open && setVideoIndex(null)}>
-        <DialogContent className="video-dialog"><DialogTitle className="sr-only">{videoIndex === null ? "" : videoDisplayItems[videoIndex]?.title}</DialogTitle><DialogDescription className="sr-only">{c.playVideo}</DialogDescription>{videoIndex !== null && <div className="video-modal-inner"><video src={selectVideoSource(videoDisplayItems[videoIndex], VIDEO_SOURCE)} controls autoPlay playsInline poster={videoDisplayItems[videoIndex].isUploaded ? undefined : videoDisplayItems[videoIndex].src} /></div>}</DialogContent>
+        <DialogContent className="video-dialog"><DialogTitle className="sr-only">{videoIndex === null ? "" : videoDisplayItems[videoIndex]?.title}</DialogTitle><DialogDescription className="sr-only">{c.playVideo}</DialogDescription>{videoIndex !== null && <div className="video-modal-inner"><video src={selectVideoSource(videoDisplayItems[videoIndex], VIDEO_SOURCE)} controls autoPlay playsInline preload="none" poster={videoDisplayItems[videoIndex].poster} /></div>}</DialogContent>
       </Dialog>
 
       <Dialog open={reviewsOpen} onOpenChange={setReviewsOpen}>

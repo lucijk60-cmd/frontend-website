@@ -200,3 +200,11 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Add regression coverage, run tests/build, and save a checkpoint.
 
 - [x] Use `Anonymous` as the reviewer name for these five user-provided reviews, as confirmed by the user.
+
+## Media Loading Performance Optimization
+
+- [x] Audit image/video loading paths and confirm that embedding binaries in code would increase payload size.
+- [x] Add native responsive image decoding/loading hints and defer video network loading until playback.
+- [x] Keep media bytes in WebDev storage and avoid oversized repository binaries.
+- [x] Add regression coverage, run type-check/tests/build, verify responsive rendering, and save a checkpoint.
+- [x] Use a non-video poster image for uploaded video cards so video URLs are never rendered through `<img>` before playback.

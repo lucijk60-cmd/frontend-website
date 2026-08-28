@@ -17,25 +17,25 @@ export function whatsappHref(language: Language) {
 }
 
 export const images = {
-  hero: "/manus-storage/obsidian-hero_414be125_a687c901.jpg",
+  hero: "/manus-storage/obsidian-hero_414be125_b0fbd711.webp",
   galleryCoupe: "/manus-storage/ppf-studio-black-car_54ef85c6.jpg",
   detailSuv: "/manus-storage/ppf-installation-detail_d528883e.jpg",
   installation: "/manus-storage/ppf-studio-black-car_54ef85c6.jpg",
   mark: "/manus-storage/ppf-logo-user-640_a0ea4ecd.webp",
   secondaryDetail: "/manus-storage/ppf-installation-detail_d528883e.jpg",
   secondaryStudio: "/manus-storage/ppf-studio-black-car_54ef85c6.jpg",
-  preserveEnglish: "/manus-storage/ppf-preserve-en_a8652e9f_a7e99247.png",
-  preserveArabic: "/manus-storage/ppf-preserve-ar_ae6423a7_23d1f9f8.png",
-  definitionEnglish: "/manus-storage/ppf-definition-en_ccdaafe2_93073632.png",
-  definitionArabic: "/manus-storage/ppf-definition-ar_ff569d7f_b09f85b0.png",
-  beforeAfterRollsEnglish: "/manus-storage/ppf-before-after-rolls-en_9f002695_6a1a0ae0.png",
-  beforeAfterRollsArabic: "/manus-storage/ppf-before-after-rolls-ar_39628be9_77fecebd.png",
-  premiumProtectionEnglish: "/manus-storage/ppf-premium-protection-en_71f2cef3_f6f64e0d.png",
-  premiumProtectionArabic: "/manus-storage/ppf-premium-protection-ar_b59e9cda_0a5cfbff.png",
-  beforeProtectionAfterEnglish: "/manus-storage/ppf-before-protection-after-en_fef2eab0_7cacfd33.png",
-  beforeProtectionAfterArabic: "/manus-storage/ppf-before-protection-after-ar_d6d869c9_fa3a57c1.png",
-  scratchCostEnglish: "/manus-storage/ppf-scratch-cost-en_6103e150_f7b78588.png",
-  scratchCostArabic: "/manus-storage/ppf-scratch-cost-ar_ff3ce699_9963fd25.png",
+  preserveEnglish: "/manus-storage/ppf-preserve-en_a8652e9f_feae942a.webp",
+  preserveArabic: "/manus-storage/ppf-preserve-ar_ae6423a7_788a8321.webp",
+  definitionEnglish: "/manus-storage/ppf-definition-en_ccdaafe2_337ba0e1.webp",
+  definitionArabic: "/manus-storage/ppf-definition-ar_ff569d7f_6d307d08.webp",
+  beforeAfterRollsEnglish: "/manus-storage/ppf-before-after-rolls-en_9f002695_3a2f327e.webp",
+  beforeAfterRollsArabic: "/manus-storage/ppf-before-after-rolls-ar_39628be9_cd827487.webp",
+  premiumProtectionEnglish: "/manus-storage/ppf-premium-protection-en_71f2cef3_4fa50155.webp",
+  premiumProtectionArabic: "/manus-storage/ppf-premium-protection-ar_b59e9cda_491c8521.webp",
+  beforeProtectionAfterEnglish: "/manus-storage/ppf-before-protection-after-en_fef2eab0_ae1abfe4.webp",
+  beforeProtectionAfterArabic: "/manus-storage/ppf-before-protection-after-ar_d6d869c9_5093d086.webp",
+  scratchCostEnglish: "/manus-storage/ppf-scratch-cost-en_6103e150_21515aea.webp",
+  scratchCostArabic: "/manus-storage/ppf-scratch-cost-ar_ff3ce699_de39f90a.webp",
 };
 
 export const translations = {
