@@ -225,3 +225,9 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Return a reference code after submission and provide a public status lookup procedure.
 - [x] Add bilingual reference display, copy affordance, lookup form, and Pending/Approved/Rejected status labels.
 - [x] Add regression coverage, run type-check/tests/build, verify responsive behavior, and save a checkpoint.
+
+## Review Save Flow Code Update
+
+- [x] Re-audit the current review submit, database insert, status lookup, and public/admin refresh code.
+- [x] Apply any required persistence and user-facing status fixes without bypassing moderation safeguards.
+- [x] Add/update regression tests, run migration checks, type-check, build, responsive verification, and save a checkpoint.

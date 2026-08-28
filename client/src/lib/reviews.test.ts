@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getLocalizedReviewText, getReviewSubmissionNotice } from "./reviews";
+import { getLocalizedReviewText, getReviewSubmissionNotice, normalizeReviewReference } from "./reviews";
 
 describe("getLocalizedReviewText", () => {
   const review = {
@@ -17,6 +17,11 @@ describe("getLocalizedReviewText", () => {
 
   it("falls back to English when Arabic text is unavailable", () => {
     expect(getLocalizedReviewText({ review: review.review, reviewAr: "  " }, "ar")).toBe(review.review);
+  });
+
+  it("normalizes valid references and rejects invalid values", () => {
+    expect(normalizeReviewReference(" ppf-abc123def456 ")).toBe("PPF-ABC123DEF456");
+    expect(normalizeReviewReference("invalid-reference")).toBe("");
   });
 
   it("returns explicit saved-and-pending feedback in both languages", () => {

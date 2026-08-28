@@ -33,7 +33,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { selectPublishedMedia, selectVideoSource } from "@/lib/media";
-import { getLocalizedReviewText, getReviewSubmissionNotice } from "@/lib/reviews";
+import { getLocalizedReviewText, getReviewSubmissionNotice, normalizeReviewReference } from "@/lib/reviews";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   BRAND_NAME,
@@ -53,6 +53,12 @@ import {
 const VIDEO_SOURCE = "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4";
 const STORAGE_KEY = "aurelis-language";
 const galleryFilterKeys = ["all", "Full Body PPF", "Front PPF", "Luxury Cars", "SUV", "Before & After", "Installation"];
+
+function getStoredReviewReference(): string {
+  if (typeof window === "undefined") return "";
+  const saved = window.localStorage.getItem("ppfstudio-review-reference") ?? "";
+  return normalizeReviewReference(saved);
+}
 
 function getStoredLanguage(): Language | null {
   if (typeof window === "undefined") return null;
@@ -137,9 +143,9 @@ export default function Home() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
   const [reviewSubmittedNotice, setReviewSubmittedNotice] = useState(false);
-  const [reviewReference, setReviewReference] = useState("");
-  const [trackingReference, setTrackingReference] = useState("");
-  const [trackingInput, setTrackingInput] = useState("");
+  const [reviewReference, setReviewReference] = useState(getStoredReviewReference);
+  const [trackingReference, setTrackingReference] = useState(getStoredReviewReference);
+  const [trackingInput, setTrackingInput] = useState(getStoredReviewReference);
   const [referenceCopied, setReferenceCopied] = useState(false);
   const statsRef = useRef<HTMLElement | null>(null);
   const c: Content = translations[language];
@@ -168,6 +174,7 @@ export default function Home() {
       setReviewFormOpen(false);
       setReviewSubmittedNotice(true);
       setReviewReference(result.publicReference);
+      window.localStorage.setItem("ppfstudio-review-reference", result.publicReference);
       setTrackingInput(result.publicReference);
       setTrackingReference(result.publicReference);
       setReferenceCopied(false);
@@ -246,8 +253,8 @@ export default function Home() {
 
   const handleTrackReview = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const normalized = trackingInput.trim().toUpperCase();
-    if (!/^PPF-[A-Z0-9]{12}$/.test(normalized)) {
+    const normalized = normalizeReviewReference(trackingInput);
+    if (!normalized) {
       toast.error(c.reviewReferenceInvalid);
       return;
     }
