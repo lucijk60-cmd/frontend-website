@@ -9,6 +9,7 @@ import { appRouter, sanitizeFileName, validateUpload } from "../routers";
 import { createAdminMedia } from "../db";
 import { storagePut } from "../storage";
 import { isAdminSession } from "../adminAuth";
+import { registerCallSignaling } from "../callSignaling";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 
@@ -34,6 +35,7 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+  registerCallSignaling(server);
   // Configure body parser with larger size limit for file uploads
   // Base64 adds roughly one third overhead; allow a raw 50 MB video plus JSON envelope.
   app.use(express.json({ limit: "100mb" }));

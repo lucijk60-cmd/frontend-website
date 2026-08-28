@@ -249,3 +249,10 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Audit the host where the review form is being used and the `/api/trpc` response/status.
 - [x] Fix full-stack API routing or clearly separate static-host behavior without hiding persistence failures.
 - [x] Validate review submit, status lookup, tests, build, and responsive UI before checkpoint.
+
+## WebRTC Calling Phase 1
+
+- [x] Add business/operator and call-session schema with secure session/token metadata.
+- [x] Add call-session create/status/end procedures and WebSocket signaling foundation for Arabic-English clients.
+- [x] Add rate limits, authorization checks, lifecycle validation, and no-audio-recording safeguards.
+- [x] Add backend tests, migration verification, server restart, WebSocket/API checks, build, and checkpoint.

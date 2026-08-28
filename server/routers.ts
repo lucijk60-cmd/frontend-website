@@ -1,6 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, adminSessionProcedure, publicProcedure, router } from "./_core/trpc";
@@ -8,11 +8,14 @@ import { TRPCError } from "@trpc/server";
 import { clearAdminSessionCookie, createAdminSession, setAdminSessionCookie, verifyAdminCredentials } from "./adminAuth";
 import { createAdminMedia, createAdminMediaPair, getAdminMedia, getAdminMediaById, getPublishedAdminMedia, updateAdminMedia, updateAdminMediaStatus } from "./db";
 import { storagePut } from "./storage";
-import { createReview, getApprovedReviewCount, getApprovedReviews, getPendingReviews, getReviewStatusByReference, hasDuplicateReview, updateReviewStatus } from "./db";
+import { createCallSession, createReview, ensureCallBusiness, getApprovedReviewCount, getApprovedReviews, getCallSessionByCallId, getPendingReviews, getReviewStatusByReference, hasDuplicateReview, updateCallSession, updateReviewStatus } from "./db";
 
 const gateAttempts = new Map<string, { count: number; resetAt: number }>();
+const callAttempts = new Map<string, { count: number; resetAt: number }>();
 const MAX_GATE_ATTEMPTS = 5;
+const MAX_CALL_ATTEMPTS = 3;
 const GATE_WINDOW_MS = 10 * 60 * 1000;
+const CALL_SESSION_WINDOW_MS = 10 * 60 * 1000;
 
 function getRequestKey(req: { ip?: string; headers: Record<string, string | string[] | undefined> }) {
   const forwarded = req.headers?.["x-forwarded-for"];
@@ -30,6 +33,30 @@ function assertGateRateLimit(req: { ip?: string; headers: Record<string, string 
   if (previous.count >= MAX_GATE_ATTEMPTS) {
     throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many attempts. Please try again later." });
   }
+}
+
+function assertCallRateLimit(req: { ip?: string; headers: Record<string, string | string[] | undefined> }) {
+  const now = Date.now();
+  const key = getRequestKey(req);
+  const previous = callAttempts.get(key);
+  if (!previous || previous.resetAt <= now) {
+    callAttempts.set(key, { count: 1, resetAt: now + CALL_SESSION_WINDOW_MS });
+    return;
+  }
+  if (previous.count >= MAX_CALL_ATTEMPTS) {
+    throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Too many call requests. Please try again later." });
+  }
+  previous.count += 1;
+}
+
+function hashCallToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function hasCallToken(token: string, expectedHash: string) {
+  const actual = Buffer.from(hashCallToken(token));
+  const expected = Buffer.from(expectedHash);
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
 function registerGateFailure(req: { ip?: string; headers: Record<string, string | string[] | undefined> }) {
@@ -183,6 +210,51 @@ export const appRouter = router({
         id: z.number().int().positive(),
         status: z.enum(["draft", "published"]),
       })).mutation(({ input }) => updateAdminMediaStatus(input.id, input.status)),
+    }),
+  }),
+
+  calls: router({
+    createSession: publicProcedure.input(z.object({
+      businessId: z.string().trim().min(3).max(64).default("PPFSTUDIO001"),
+      callerSessionId: z.string().trim().min(8).max(128).optional(),
+    })).mutation(async ({ input, ctx }) => {
+      assertCallRateLimit(ctx.req);
+      const callId = `call-${randomUUID()}`;
+      const customerToken = `${randomUUID()}${randomUUID()}`;
+      await ensureCallBusiness(input.businessId, "PPF Studio");
+      await createCallSession({
+        callId,
+        businessId: input.businessId,
+        callerSessionId: input.callerSessionId,
+        customerTokenHash: hashCallToken(customerToken),
+        status: "calling",
+      });
+      return {
+        callId,
+        customerToken,
+        businessId: input.businessId,
+        operatorId: "PPFSTUDIO001",
+        status: "calling" as const,
+        expiresInSeconds: 15 * 60,
+        signalingPath: "/api/call-signaling",
+      };
+    }),
+    status: publicProcedure.input(z.object({
+      callId: z.string().trim().min(12).max(96),
+      customerToken: z.string().trim().min(32).max(96),
+    })).query(async ({ input }) => {
+      const session = await getCallSessionByCallId(input.callId);
+      if (!session || !hasCallToken(input.customerToken, session.customerTokenHash)) return null;
+      return { callId: session.callId, status: session.status, createdAt: session.createdAt, startedAt: session.startedAt, endedAt: session.endedAt, durationSeconds: session.durationSeconds };
+    }),
+    end: publicProcedure.input(z.object({
+      callId: z.string().trim().min(12).max(96),
+      customerToken: z.string().trim().min(32).max(96),
+    })).mutation(async ({ input }) => {
+      const session = await getCallSessionByCallId(input.callId);
+      if (!session || !hasCallToken(input.customerToken, session.customerTokenHash)) throw new TRPCError({ code: "NOT_FOUND", message: "Call session not found." });
+      if (!["ended", "rejected", "failed"].includes(session.status)) await updateCallSession(input.callId, { status: "ended", endedAt: new Date(), lastSignalAt: new Date() });
+      return { success: true } as const;
     }),
   }),
 

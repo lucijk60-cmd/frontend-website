@@ -25,6 +25,50 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
+export const callBusinesses = mysqlTable("call_businesses", {
+  id: int("id").autoincrement().primaryKey(),
+  businessId: varchar("businessId", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 160 }).notNull(),
+  status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CallBusiness = typeof callBusinesses.$inferSelect;
+export type InsertCallBusiness = typeof callBusinesses.$inferInsert;
+
+export const callOperators = mysqlTable("call_operators", {
+  id: int("id").autoincrement().primaryKey(),
+  businessId: int("businessId").notNull(),
+  operatorId: varchar("operatorId", { length: 96 }).notNull().unique(),
+  displayName: varchar("displayName", { length: 160 }).notNull(),
+  status: mysqlEnum("status", ["offline", "online", "busy"]).default("offline").notNull(),
+  lastSeenAt: timestamp("lastSeenAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CallOperator = typeof callOperators.$inferSelect;
+export type InsertCallOperator = typeof callOperators.$inferInsert;
+
+export const callSessions = mysqlTable("call_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  callId: varchar("callId", { length: 96 }).notNull().unique(),
+  businessId: varchar("businessId", { length: 64 }).notNull(),
+  operatorId: varchar("operatorId", { length: 96 }),
+  callerSessionId: varchar("callerSessionId", { length: 128 }),
+  customerTokenHash: varchar("customerTokenHash", { length: 128 }).notNull(),
+  status: mysqlEnum("status", ["idle", "calling", "ringing", "connecting", "connected", "reconnecting", "ended", "rejected", "busy", "failed", "permission_denied"]).default("calling").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  startedAt: timestamp("startedAt"),
+  endedAt: timestamp("endedAt"),
+  durationSeconds: int("durationSeconds"),
+  lastSignalAt: timestamp("lastSignalAt"),
+});
+
+export type CallSession = typeof callSessions.$inferSelect;
+export type InsertCallSession = typeof callSessions.$inferInsert;
+
 export const reviews = mysqlTable("reviews", {
   id: int("id").autoincrement().primaryKey(),
   publicReference: varchar("publicReference", { length: 32 }).unique(),

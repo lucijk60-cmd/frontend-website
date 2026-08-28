@@ -19,3 +19,6 @@ ADMIN_GATE_PASSWORD=replace-me
 PPF_GATE_PASSWORD=replace-me
 ADMIN_PANEL_PASSWORD=replace-me
 PRIVATE_ACCESS_PASSWORD=replace-me
+
+# Required for the operator Android WebSocket client in the calling phase.
+PPF_OPERATOR_SIGNALING_TOKEN=replace-with-a-long-random-secret

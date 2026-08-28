@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { AdminMedia, InsertAdminMedia, InsertReview, InsertUser, adminMedia, reviews, users } from "../drizzle/schema";
+import { AdminMedia, CallSession, InsertAdminMedia, InsertReview, InsertUser, adminMedia, callBusinesses, callSessions, reviews, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -87,6 +87,34 @@ export async function getUserByOpenId(openId: string) {
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
 
   return result.length > 0 ? result[0] : undefined;
+}
+
+export async function ensureCallBusiness(businessId: string, name = "PPF Studio") {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.insert(callBusinesses).values({ businessId, name, status: "active" }).onDuplicateKeyUpdate({
+    set: { name, status: "active" },
+  });
+}
+
+export async function createCallSession(session: typeof callSessions.$inferInsert) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const [result] = await db.insert(callSessions).values(session);
+  return { id: result.insertId, callId: session.callId };
+}
+
+export async function getCallSessionByCallId(callId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const [result] = await db.select().from(callSessions).where(eq(callSessions.callId, callId)).limit(1);
+  return result;
+}
+
+export async function updateCallSession(callId: string, values: Partial<typeof callSessions.$inferInsert>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.update(callSessions).set(values).where(eq(callSessions.callId, callId));
 }
 
 export async function getApprovedReviews(limit = 24, offset = 0) {
