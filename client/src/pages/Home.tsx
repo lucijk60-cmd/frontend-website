@@ -1,10 +1,12 @@
 /* Obsidian Atelier: cinematic editorial luxury, graphite surfaces, restrained champagne-gold precision cues. */
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, FormEvent, ReactNode } from "react";
+import { skipToken } from "@tanstack/react-query";
 import {
   ArrowDown,
   ArrowUpRight,
   Check,
+  Copy,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -101,6 +103,12 @@ function SectionHeader({ eyebrow, title, body, align = "left" }: { eyebrow: stri
   );
 }
 
+function getReviewStatusLabel(status: "pending" | "approved" | "rejected", c: Content) {
+  if (status === "approved") return c.reviewStatusApproved;
+  if (status === "rejected") return c.reviewStatusRejected;
+  return c.reviewStatusPending;
+}
+
 function CraftStandard({ value, label, active }: { value: string; label: string; active: boolean }) {
   return (
     <div className={`stat-item ${active ? "stat-item--active" : ""}`}>
@@ -129,12 +137,18 @@ export default function Home() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
   const [reviewSubmittedNotice, setReviewSubmittedNotice] = useState(false);
+  const [reviewReference, setReviewReference] = useState("");
+  const [trackingReference, setTrackingReference] = useState("");
+  const [trackingInput, setTrackingInput] = useState("");
+  const [referenceCopied, setReferenceCopied] = useState(false);
   const statsRef = useRef<HTMLElement | null>(null);
   const c: Content = translations[language];
   const isArabic = language === "ar";
   const { user } = useAuth();
   const trpcUtils = trpc.useUtils();
   const reviewsQuery = trpc.reviews.list.useQuery({ limit: 24, offset: 0 });
+  const trackingQueryInput = useMemo(() => trackingReference ? { publicReference: trackingReference } : undefined, [trackingReference]);
+  const reviewStatusQuery = trpc.reviews.statusByReference.useQuery(trackingQueryInput ?? skipToken);
   const publishedMediaQuery = trpc.admin.media.published.useQuery();
   const pendingReviewsQuery = trpc.reviews.pending.useQuery(undefined, { enabled: user?.role === "admin" });
   const moderateReview = trpc.reviews.moderate.useMutation({
@@ -145,7 +159,7 @@ export default function Home() {
     onError: (error) => toast.error(error.message),
   });
   const submitReview = trpc.reviews.submit.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (result) => {
       await Promise.all([trpcUtils.reviews.list.invalidate(), trpcUtils.reviews.pending.invalidate()]);
       setReviewName("");
       setReviewVehicle("");
@@ -153,6 +167,10 @@ export default function Home() {
       setReviewText("");
       setReviewFormOpen(false);
       setReviewSubmittedNotice(true);
+      setReviewReference(result.publicReference);
+      setTrackingInput(result.publicReference);
+      setTrackingReference(result.publicReference);
+      setReferenceCopied(false);
       toast.success(getReviewSubmissionNotice(language));
     },
     onError: (error) => toast.error(error.message),
@@ -225,6 +243,27 @@ export default function Home() {
   }, [activeFilter, localizedGalleryItems]);
 
   const activeLightboxItem = lightboxIndex === null ? null : localizedGalleryItems[lightboxIndex];
+
+  const handleTrackReview = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const normalized = trackingInput.trim().toUpperCase();
+    if (!/^PPF-[A-Z0-9]{12}$/.test(normalized)) {
+      toast.error(c.reviewReferenceInvalid);
+      return;
+    }
+    setTrackingReference(normalized);
+  };
+
+  const copyReviewReference = async () => {
+    if (!reviewReference) return;
+    try {
+      await navigator.clipboard.writeText(reviewReference);
+      setReferenceCopied(true);
+      toast.success(c.reviewReferenceCopied);
+    } catch {
+      toast.error(c.error);
+    }
+  };
 
   return (
     <div className={`site-shell ${isArabic ? "site-shell--rtl" : ""}`}>
@@ -383,6 +422,8 @@ export default function Home() {
           <div className="reviews-heading-row"><Reveal><SectionHeader eyebrow={c.testimonialsEyebrow} title={c.testimonialsTitle} /></Reveal><Reveal delay={80} className="reviews-actions"><button className="review-count-button" onClick={() => setReviewsOpen(true)} aria-label={c.reviewOpen}><strong>{reviewsQuery.data?.total ?? 0}</strong><span>{c.reviewCountLabel}</span><ArrowUpRight size={17} /></button><button className="button button--line review-submit-button" onClick={() => setReviewFormOpen(true)}><Plus size={16} />{c.reviewFormSubmit}</button></Reveal></div>
           <p className="review-moderation-note">{c.reviewModeratedNote}</p>
           {reviewSubmittedNotice && <p className="review-submission-notice" aria-live="polite">{getReviewSubmissionNotice(language)}</p>}
+          {reviewReference && <div className="review-reference-card"><div><span className="review-reference-label">{c.reviewReferenceLabel}</span><code>{reviewReference}</code></div><button type="button" className="button button--line" onClick={copyReviewReference}><Copy size={15} />{referenceCopied ? c.reviewReferenceCopied : c.reviewReferenceCopy}</button></div>}
+          <div className="review-tracker"><div><h3>{c.reviewTrackTitle}</h3><p>{c.reviewTrackBody}</p></div><form onSubmit={handleTrackReview}><label className="sr-only" htmlFor="review-reference-input">{c.reviewReferenceLabel}</label><input id="review-reference-input" value={trackingInput} onChange={(event) => setTrackingInput(event.target.value.toUpperCase())} placeholder={c.reviewReferencePlaceholder} maxLength={16} autoComplete="off" /><button className="button button--gold" type="submit">{c.reviewTrackSubmit}</button></form>{trackingReference && reviewStatusQuery.isLoading && <p className="review-tracker-result">{c.reviewTrackLoading}</p>}{trackingReference && !reviewStatusQuery.isLoading && reviewStatusQuery.data && <div className="review-tracker-result"><strong className={`review-status review-status--${reviewStatusQuery.data.status}`}>{getReviewStatusLabel(reviewStatusQuery.data.status, c)}</strong><span>{c.reviewTrackDate}: {new Date(reviewStatusQuery.data.createdAt).toLocaleDateString(c.locale)}</span></div>}{trackingReference && !reviewStatusQuery.isLoading && !reviewStatusQuery.data && <p className="review-tracker-result review-tracker-result--error">{c.reviewTrackNotFound}</p>}</div>
           {reviewsQuery.isLoading ? <div className="review-empty-state">{isArabic ? "جارٍ تحميل المراجعات..." : "Loading approved reviews..."}</div> : <div className="testimonial-grid">{(reviewsQuery.data?.items ?? []).slice(0, 3).map((review, index) => <Reveal key={review.id} delay={index * 65} className="testimonial-card"><div className="testimonial-top"><div className="stars">{[0, 1, 2, 3, 4].map((star) => <Star key={star} size={13} fill={star < review.rating ? "currentColor" : "none"} />)}</div><span>{review.rating}.0</span></div><p>“{getLocalizedReviewText(review, language)}”</p><div className="testimonial-person"><span className="testimonial-avatar">{review.name.charAt(0).toUpperCase()}</span><span><strong>{review.name}</strong><small>{review.vehicle || (isArabic ? "عميل" : "Client")}</small></span></div></Reveal>)}</div>}
           {!reviewsQuery.isLoading && (reviewsQuery.data?.items.length ?? 0) === 0 && <div className="review-empty-state">{c.reviewEmpty}</div>}
         </section>

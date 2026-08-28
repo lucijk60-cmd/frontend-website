@@ -218,3 +218,10 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Verify the public pending/public-approved retrieval contract and document that owner credentialed browser submission smoke testing remains recommended.
 - [x] Add visible pending-state guidance near the review count/list so visitors understand moderation timing.
 - [x] Cover the user-facing saved/pending message with a focused unit test and document the credentialed owner smoke-test limitation.
+
+## Review Status and Reference Lookup
+
+- [x] Add a secure opaque public reference field to review records and migrate the database.
+- [x] Return a reference code after submission and provide a public status lookup procedure.
+- [x] Add bilingual reference display, copy affordance, lookup form, and Pending/Approved/Rejected status labels.
+- [x] Add regression coverage, run type-check/tests/build, verify responsive behavior, and save a checkpoint.

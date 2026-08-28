@@ -37,4 +37,10 @@ describe("reviews", () => {
 
     expect(result.items.some((review) => review.status === "pending")).toBe(false);
   });
+
+  it("rejects malformed public reference codes", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+
+    await expect(caller.reviews.statusByReference({ publicReference: "not-a-reference" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
 });

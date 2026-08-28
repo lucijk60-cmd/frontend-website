@@ -115,6 +115,17 @@ export async function createReview(review: InsertReview) {
   return { id: result.insertId };
 }
 
+export async function getReviewStatusByReference(publicReference: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const [result] = await db.select({
+    publicReference: reviews.publicReference,
+    status: reviews.status,
+    createdAt: reviews.createdAt,
+  }).from(reviews).where(eq(reviews.publicReference, publicReference)).limit(1);
+  return result;
+}
+
 export async function hasDuplicateReview(name: string, review: string) {
   const db = await getDb();
   if (!db) return false;

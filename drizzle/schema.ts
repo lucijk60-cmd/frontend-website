@@ -27,6 +27,7 @@ export type InsertUser = typeof users.$inferInsert;
 
 export const reviews = mysqlTable("reviews", {
   id: int("id").autoincrement().primaryKey(),
+  publicReference: varchar("publicReference", { length: 32 }).unique(),
   name: varchar("name", { length: 120 }).notNull(),
   vehicle: varchar("vehicle", { length: 120 }),
   rating: int("rating").notNull(),

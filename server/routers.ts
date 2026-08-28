@@ -8,7 +8,7 @@ import { TRPCError } from "@trpc/server";
 import { clearAdminSessionCookie, createAdminSession, setAdminSessionCookie, verifyAdminCredentials } from "./adminAuth";
 import { createAdminMedia, createAdminMediaPair, getAdminMedia, getAdminMediaById, getPublishedAdminMedia, updateAdminMedia, updateAdminMediaStatus } from "./db";
 import { storagePut } from "./storage";
-import { createReview, getApprovedReviewCount, getApprovedReviews, getPendingReviews, hasDuplicateReview, updateReviewStatus } from "./db";
+import { createReview, getApprovedReviewCount, getApprovedReviews, getPendingReviews, getReviewStatusByReference, hasDuplicateReview, updateReviewStatus } from "./db";
 
 const gateAttempts = new Map<string, { count: number; resetAt: number }>();
 const MAX_GATE_ATTEMPTS = 5;
@@ -204,7 +204,15 @@ export const appRouter = router({
       if (await hasDuplicateReview(input.name, input.review)) {
         throw new Error("A matching review has already been submitted.");
       }
-      return createReview({ ...input, status: "pending" });
+      const publicReference = `PPF-${randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase()}`;
+      const saved = await createReview({ ...input, publicReference, status: "pending" });
+      return { ...saved, publicReference, status: "pending" as const };
+    }),
+    statusByReference: publicProcedure.input(z.object({
+      publicReference: z.string().trim().toUpperCase().regex(/^PPF-[A-Z0-9]{12}$/),
+    })).query(async ({ input }) => {
+      const result = await getReviewStatusByReference(input.publicReference);
+      return result ?? null;
     }),
     pending: adminProcedure.query(() => getPendingReviews()),
     moderate: adminProcedure.input(z.object({

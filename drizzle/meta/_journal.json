@@ -29,6 +29,13 @@
       "when": 1787908422018,
       "tag": "0003_normal_reavers",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1787914344655,
+      "tag": "0004_high_nehzno",
+      "breakpoints": true
     }
   ]
 }

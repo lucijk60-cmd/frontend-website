@@ -510,6 +510,21 @@ body:not(.no-reveal) .reveal { animation: reveal-in 650ms var(--ease-out) forwar
 .review-submit-button svg { flex: 0 0 auto; }
 .review-moderation-note { margin: 18px 0 0; color: var(--soft); font-size: 10px; letter-spacing: .08em; }
 .review-submission-notice { margin: 10px 0 0; padding: 10px 12px; border-inline-start: 2px solid var(--gold); background: rgba(200,165,107,.08); color: var(--gold-light); font-size: 11px; line-height: 1.5; }
+.review-reference-card, .review-tracker { margin-top: 14px; padding: 16px; border: 1px solid rgba(200,165,107,.24); background: rgba(255,255,255,.025); }
+.review-reference-card { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.review-reference-card > div { display: grid; gap: 7px; min-width: 0; }
+.review-reference-label { color: var(--soft); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; }
+.review-reference-card code { color: var(--gold-light); font-family: "Manrope", sans-serif; font-size: 16px; letter-spacing: .12em; }
+.review-reference-card .button { flex: 0 0 auto; }
+.review-tracker { display: grid; gap: 14px; }
+.review-tracker h3 { margin: 0; color: var(--white); font-family: "DM Serif Display", serif; font-size: 22px; font-weight: 400; }
+.review-tracker > div:first-child p { margin: 5px 0 0; color: var(--soft); font-size: 11px; }
+.review-tracker form { display: flex; gap: 8px; }
+.review-tracker input { min-width: 0; flex: 1; border: 1px solid rgba(244,242,237,.16); background: rgba(0,0,0,.2); color: var(--white); padding: 11px 12px; font: 11px "Manrope", sans-serif; letter-spacing: .08em; }
+.review-tracker-result { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0; color: var(--soft); font-size: 11px; }
+.review-status { color: var(--gold-light); }
+.review-status--approved { color: #a8d7b0; }
+.review-status--rejected, .review-tracker-result--error { color: #e2a6a0; }
 .review-empty-state { margin-top: 28px; padding: 28px; border: 1px dashed rgba(244,242,237,.16); color: var(--soft); font-size: 12px; line-height: 1.6; }
 .reviews-dialog, .review-form-dialog { max-width: 700px !important; border: 1px solid rgba(200,165,107,.3) !important; background: #111314 !important; }
 .reviews-dialog h2, .review-form-dialog h2 { font-family: "DM Serif Display", serif; font-size: 32px; font-weight: 400; }
@@ -534,6 +549,8 @@ body:not(.no-reveal) .reveal { animation: reveal-in 650ms var(--ease-out) forwar
   .reviews-heading-row { display: block; }
   .reviews-actions { flex-wrap: wrap; margin-top: 25px; }
   .review-count-button { flex: 1 1 auto; }
+  .review-reference-card, .review-tracker form, .review-tracker-result { align-items: stretch; flex-direction: column; }
+  .review-reference-card .button, .review-tracker .button { width: 100%; justify-content: center; }
   .review-submit-button { flex: 1 1 auto; justify-content: center; }
   .review-list-item { padding: 16px; }
   .review-list-item p { font-size: 18px; }
