@@ -1,4 +1,5 @@
-const REVIEW_SERVICE_ERROR = "Review service is unavailable. Please use the full-stack website host or try again shortly.";
+const FULL_STACK_SITE_URL = "https://frontendweb-ewq8pgsm.manus.space";
+const REVIEW_SERVICE_ERROR = `This static website cannot save reviews. Please use the full-stack PPFStudio website: ${FULL_STACK_SITE_URL}`;
 
 function looksLikeJson(body: string) {
   const trimmed = body.trimStart();

@@ -33,7 +33,7 @@ For a static-only host, use the prepared `ppfstudio-ionos-static` package. Uploa
 /pages/README.txt
 ```
 
-The package includes the public frontend, local compiled image assets, favicon, and Apache SPA fallback. It is static-only: genuine reviews, Admin login, media upload/replace, moderation, database access, and S3-backed media require the Node.js full-stack runtime and a separately hosted API. Do not upload only `client/` or only the source `dist/` folder to the web root.
+The package includes the public frontend, local compiled image assets, favicon, and Apache SPA fallback. It is static-only: genuine reviews, Admin login, media upload/replace, moderation, database access, and S3-backed media require the Node.js full-stack runtime and a separately hosted API. If a visitor submits a review from this static package, the frontend cannot write to MySQL; it now shows a clear message directing them to the working full-stack site at `https://frontendweb-ewq8pgsm.manus.space`. Do not upload only `client/` or only the source `dist/` folder to the web root.
 
 ## Domain
 

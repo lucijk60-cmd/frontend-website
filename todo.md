@@ -243,3 +243,9 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Audit review submit network/server logs and tRPC response handling.
 - [x] Fix empty or malformed response handling while preserving database persistence and moderation rules.
 - [x] Add regression coverage, run tests/type-check/build, verify the submit UI, and save a checkpoint.
+
+## Review Service Host Routing Failure
+
+- [x] Audit the host where the review form is being used and the `/api/trpc` response/status.
+- [x] Fix full-stack API routing or clearly separate static-host behavior without hiding persistence failures.
+- [x] Validate review submit, status lookup, tests, build, and responsive UI before checkpoint.

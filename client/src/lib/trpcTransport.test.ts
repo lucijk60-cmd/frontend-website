@@ -25,6 +25,6 @@ describe("normalizeTrpcResponse", () => {
     const normalized = await normalizeTrpcResponse(new Response("<!doctype html><html></html>", { status: 200 }));
 
     expect(normalized.status).toBe(500);
-    expect((await normalized.json())[0].error.json.message).toContain("full-stack website host");
+    expect((await normalized.json())[0].error.json.message).toContain("static website cannot save reviews");
   });
 });
