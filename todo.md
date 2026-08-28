@@ -237,3 +237,9 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Audit pnpm ignored build scripts and project package-manager configuration.
 - [x] Approve or configure only required trusted build scripts without changing application behavior.
 - [x] Run clean dependency validation, tests, type-check, production build, and save a checkpoint if changes are needed.
+
+## Review Submit JSON Parsing Error
+
+- [x] Audit review submit network/server logs and tRPC response handling.
+- [x] Fix empty or malformed response handling while preserving database persistence and moderation rules.
+- [x] Add regression coverage, run tests/type-check/build, verify the submit UI, and save a checkpoint.
