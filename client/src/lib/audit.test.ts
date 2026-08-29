@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { selectVideoSource } from "./media";
 import { embeddedImages } from "./embeddedImageAssets";
-import { externalImageFallbacks, images } from "./siteContent";
+import { externalImageFallbacks, images, whatsappHref, WHATSAPP_DISPLAY, WHATSAPP_NUMBER } from "./siteContent";
 
 describe("full website audit regressions", () => {
   it("uses the uploaded video URL instead of the static demo source", () => {
@@ -16,6 +16,13 @@ describe("full website audit regressions", () => {
     expect(optimizedKeys.every((key) => images[key].startsWith("data:image/"))).toBe(true);
     expect(optimizedKeys.every((key) => externalImageFallbacks[key].startsWith("/manus-storage/"))).toBe(true);
     expect(embeddedImages.hero.startsWith("data:image/webp;base64,")).toBe(true);
+  });
+
+  it("uses the updated WhatsApp contact in display and generated links", () => {
+    expect(WHATSAPP_NUMBER).toBe("966537358631");
+    expect(WHATSAPP_DISPLAY).toBe("+966 53 735 8631");
+    expect(whatsappHref("en")).toContain("https://wa.me/966537358631?text=");
+    expect(whatsappHref("ar")).toContain("https://wa.me/966537358631?text=");
   });
 
   it("keeps crawler metadata on the PPFStudio live domain", () => {

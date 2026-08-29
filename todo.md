@@ -282,3 +282,8 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Generate a code/data asset module with reversible external URL fallback.
 - [x] Integrate embedded image references without changing video or review behavior.
 - [x] Validate local bundle size, tests, build, and desktop/mobile rendering; do not save a publish checkpoint unless explicitly requested.
+
+## WhatsApp Number Update
+
+- [x] Replace the WhatsApp number and display value with `+966537358631` everywhere it is used.
+- [x] Verify generated WhatsApp hrefs, tests, production build, and save a checkpoint.

@@ -3,8 +3,8 @@ import { embeddedImages } from "./embeddedImageAssets";
 
 export const BRAND_NAME = "PPFStudio";
 
-export const WHATSAPP_NUMBER = "966556143034";
-export const WHATSAPP_DISPLAY = "+966 55 614 3034";
+export const WHATSAPP_NUMBER = "966537358631";
+export const WHATSAPP_DISPLAY = "+966 53 735 8631";
 export const INSTAGRAM_URL = "https://www.instagram.com/ppf_studio_com?igsi=Nmh6b3BmNGRrZ3oz";
 export const SNAPCHAT_URL = "https://www.snapchat.com/add/jkjabed2026?share_id=lKZ1ASIv4Jk&locale=en-US";
 export const TIKTOK_URL = "https://www.tiktok.com/@ppf_studio?_r=1&_t=ZS-99ECEM4AyhB";
