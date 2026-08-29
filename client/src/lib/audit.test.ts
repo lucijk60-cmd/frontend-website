@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { selectVideoSource } from "./media";
-import { images } from "./siteContent";
+import { embeddedImages } from "./embeddedImageAssets";
+import { externalImageFallbacks, images } from "./siteContent";
 
 describe("full website audit regressions", () => {
   it("uses the uploaded video URL instead of the static demo source", () => {
@@ -10,10 +11,11 @@ describe("full website audit regressions", () => {
     expect(selectVideoSource({ src: "/poster.webp", isUploaded: false }, "demo.mp4")).toBe("demo.mp4");
   });
 
-  it("uses storage-hosted WebP variants for the optimized large assets", () => {
-    const optimizedAssets = [images.hero, images.preserveEnglish, images.preserveArabic, images.definitionEnglish, images.definitionArabic, images.beforeAfterRollsEnglish, images.beforeAfterRollsArabic, images.premiumProtectionEnglish, images.premiumProtectionArabic, images.beforeProtectionAfterEnglish, images.beforeProtectionAfterArabic, images.scratchCostEnglish, images.scratchCostArabic];
-    expect(optimizedAssets.every((asset) => asset.endsWith(".webp"))).toBe(true);
-    expect(optimizedAssets.every((asset) => asset.startsWith("/manus-storage/"))).toBe(true);
+  it("uses embedded sources while retaining storage-hosted fallbacks", () => {
+    const optimizedKeys = ["hero", "preserveEnglish", "preserveArabic", "definitionEnglish", "definitionArabic", "beforeAfterRollsEnglish", "beforeAfterRollsArabic", "premiumProtectionEnglish", "premiumProtectionArabic", "beforeProtectionAfterEnglish", "beforeProtectionAfterArabic", "scratchCostEnglish", "scratchCostArabic"] as const;
+    expect(optimizedKeys.every((key) => images[key].startsWith("data:image/"))).toBe(true);
+    expect(optimizedKeys.every((key) => externalImageFallbacks[key].startsWith("/manus-storage/"))).toBe(true);
+    expect(embeddedImages.hero.startsWith("data:image/webp;base64,")).toBe(true);
   });
 
   it("keeps crawler metadata on the PPFStudio live domain", () => {

@@ -256,3 +256,29 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Add call-session create/status/end procedures and WebSocket signaling foundation for Arabic-English clients.
 - [x] Add rate limits, authorization checks, lifecycle validation, and no-audio-recording safeguards.
 - [x] Add backend tests, migration verification, server restart, WebSocket/API checks, build, and checkpoint.
+
+## Android Operator App and TURN Phase
+
+- [ ] Audit current WebSocket signaling contract and determine the Android app/TURN prerequisites.
+- [ ] Add configurable ICE/TURN server settings and secure environment placeholders without hardcoding credentials.
+- [ ] Create an Android operator incoming-call client scaffold with Arabic-English call states and signaling connection.
+- [ ] Add tests, build validation, and deployment/setup documentation; record any required user credentials or hosting steps.
+
+## User-requested Image Code Conversion
+
+- [ ] Inventory every image reference and confirm available source assets.
+- [ ] Convert image assets to the requested code/data representation while preserving a reversible original reference map.
+- [ ] Validate bundle size, memory/loading impact, tests, build, and desktop/mobile rendering before checkpoint.
+
+## Logo and Hero Code Conversion
+
+- [ ] Audit the exact logo and post-language-selection hero asset references.
+- [ ] Convert the logo to an inline/code SVG representation and evaluate a safe hero representation.
+- [ ] Preserve reversible fallbacks and validate bundle size, build, tests, and English/Arabic rendering.
+
+## Local-only Embedded Image Version
+
+- [ ] Inventory all referenced image assets and their available local source files.
+- [ ] Generate a code/data asset module with reversible external URL fallback.
+- [ ] Integrate embedded image references without changing video or review behavior.
+- [ ] Validate local bundle size, tests, build, and desktop/mobile rendering; do not save a publish checkpoint unless explicitly requested.

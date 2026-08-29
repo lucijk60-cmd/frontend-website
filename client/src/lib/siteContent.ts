@@ -1,4 +1,5 @@
 export type Language = "en" | "ar";
+import { embeddedImages } from "./embeddedImageAssets";
 
 export const BRAND_NAME = "PPFStudio";
 
@@ -16,7 +17,7 @@ export function whatsappHref(language: Language) {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGES[language])}`;
 }
 
-export const images = {
+const externalImages = {
   hero: "/manus-storage/obsidian-hero_414be125_b0fbd711.webp",
   galleryCoupe: "/manus-storage/ppf-studio-black-car_54ef85c6.jpg",
   detailSuv: "/manus-storage/ppf-installation-detail_d528883e.jpg",
@@ -36,7 +37,11 @@ export const images = {
   beforeProtectionAfterArabic: "/manus-storage/ppf-before-protection-after-ar_d6d869c9_5093d086.webp",
   scratchCostEnglish: "/manus-storage/ppf-scratch-cost-en_6103e150_21515aea.webp",
   scratchCostArabic: "/manus-storage/ppf-scratch-cost-ar_ff3ce699_de39f90a.webp",
-};
+} as const;
+
+export const USE_EMBEDDED_IMAGES = true;
+export const images = USE_EMBEDDED_IMAGES ? { ...externalImages, ...embeddedImages } : externalImages;
+export const externalImageFallbacks = externalImages;
 
 export const translations = {
   en: {
