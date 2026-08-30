@@ -1,5 +1,5 @@
-import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { AdminMedia, CallSession, InsertAdminMedia, InsertReview, InsertUser, adminMedia, callBusinesses, callSessions, reviews, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -141,6 +141,22 @@ export async function createReview(review: InsertReview) {
   if (!db) throw new Error("Database is not available");
   const [result] = await db.insert(reviews).values(review);
   return { id: result.insertId };
+}
+
+export async function importPendingReviews(entries: InsertReview[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  if (!entries.length) return { inserted: 0, skipped: 0 } as const;
+
+  const references = entries.map(entry => entry.publicReference).filter((value): value is string => Boolean(value));
+  const existing = references.length
+    ? await db.select({ publicReference: reviews.publicReference }).from(reviews).where(inArray(reviews.publicReference, references))
+    : [];
+  const existingReferences = new Set(existing.map(row => row.publicReference));
+  const pendingEntries = entries.filter(entry => !entry.publicReference || !existingReferences.has(entry.publicReference));
+
+  if (pendingEntries.length) await db.insert(reviews).values(pendingEntries);
+  return { inserted: pendingEntries.length, skipped: entries.length - pendingEntries.length } as const;
 }
 
 export async function getReviewStatusByReference(publicReference: string) {

@@ -62,6 +62,10 @@ const copy = {
     saveChanges: "Save changes",
     cancel: "Cancel",
     replacement: "Choose replacement file",
+    reviewImportTitle: "Review intake",
+    reviewImportBody: "Import the 20 Arabic texts supplied by the owner as Anonymous and pending verification. No invented names, photos, or public approval are added.",
+    reviewImportButton: "Add to pending review queue",
+    reviewImportSuccess: "Arabic reviews added to the pending queue.",
 
   },
   ar: {
@@ -110,6 +114,10 @@ const copy = {
     saveChanges: "حفظ التغييرات",
     cancel: "إلغاء",
     replacement: "اختر ملفاً بديلاً",
+    reviewImportTitle: "إدخال المراجعات",
+    reviewImportBody: "أضف النصوص العربية العشرين التي قدمها المالك باسم مجهول وحالة قيد التحقق. لن تتم إضافة أسماء أو صور مختلقة أو نشر عام.",
+    reviewImportButton: "إضافة إلى قائمة المراجعات المعلقة",
+    reviewImportSuccess: "تمت إضافة المراجعات العربية إلى قائمة الانتظار للتحقق.",
 
   },
 } as const;
@@ -181,6 +189,10 @@ export default function Admin() {
       void mediaQuery.refetch();
     },
     onError: (error) => toast.error(error.message),
+  });
+  const importArabicReviews = trpc.admin.importUserProvidedArabic.useMutation({
+    onSuccess: result => toast.success(`${c.reviewImportSuccess} (${result.inserted} new, ${result.skipped} already present)`),
+    onError: error => toast.error(error.message),
   });
   const logout = trpc.admin.logout.useMutation({
     onSuccess: () => {
@@ -287,6 +299,13 @@ export default function Admin() {
       <div className="admin-topbar"><button className="admin-back" onClick={() => setLocation("/")}><ArrowLeft size={16} /> {c.back}</button><div className="admin-top-actions"><button className="admin-language" onClick={() => setLanguage(language === "en" ? "ar" : "en")}>{language === "en" ? "العربية" : "English"}</button><button className="admin-logout" onClick={() => logout.mutate()}><LogOut size={16} /> {c.logout}</button></div></div>
       <section className="admin-hero"><div><span className="admin-eyebrow">{c.eyebrow}</span><h1>{c.title}</h1><p>{c.intro}</p></div><div className="admin-hero-stamp">PPF<br /><span>PRIVATE</span></div></section>
       <section className="admin-layout">
+        <section className="admin-upload-card admin-review-import-card">
+          <div className="admin-card-heading"><span className="admin-index">03</span><h2>{c.reviewImportTitle}</h2></div>
+          <p className="admin-review-import-copy">{c.reviewImportBody}</p>
+          <Button type="button" className="admin-submit" disabled={importArabicReviews.isPending} onClick={() => importArabicReviews.mutate()}>
+            {importArabicReviews.isPending ? "…" : c.reviewImportButton}
+          </Button>
+        </section>
         <form className="admin-upload-card" onSubmit={submitUpload}>
           <div className="admin-card-heading"><span className="admin-index">01</span><h2>{c.uploadTitle}</h2></div>
           <div className="admin-form-grid">

@@ -342,7 +342,7 @@ img { display: block; max-width: 100%; }
 .language-card > svg { position: absolute; top: 17px; right: 17px; color: var(--gold); }
 .language-code { color: var(--gold); font-size: 9px; letter-spacing: .18em; }
 .language-modal-foot { position: relative; display: flex; align-items: center; gap: 8px; margin-top: 28px; color: var(--soft); font-size: 8px; letter-spacing: .22em; }
-.language-modal-foot img { width: 20px; height: 20px; object-fit: contain; }
+.language-modal-foot img, .language-modal-foot svg { width: 20px; height: 20px; object-fit: contain; }
 
 .lightbox-dialog, .video-dialog { max-width: calc(100vw - 40px) !important; width: 1100px !important; padding: 0 !important; border: 1px solid rgba(244,242,237,.18) !important; background: #050606 !important; }
 .lightbox-inner { position: relative; }
@@ -674,3 +674,10 @@ body:not(.no-reveal) .reveal { animation: reveal-in 650ms var(--ease-out) forwar
 
 .social-link--admin { color: var(--gold-light); }
 .social-link--admin svg { color: var(--gold); }
+
+.admin-review-import-card { display: flex; flex-direction: column; gap: 18px; }
+.admin-review-import-copy { max-width: 58ch; margin: 0; color: #9b9c95; font-size: 12px; line-height: 1.75; }
+.admin-review-import-card .admin-submit { align-self: flex-start; }
+@media (max-width: 640px) {
+  .admin-review-import-card .admin-submit { width: 100%; }
+}

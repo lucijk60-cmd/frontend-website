@@ -8,7 +8,8 @@ import { TRPCError } from "@trpc/server";
 import { clearAdminSessionCookie, createAdminSession, setAdminSessionCookie, verifyAdminCredentials } from "./adminAuth";
 import { createAdminMedia, createAdminMediaPair, getAdminMedia, getAdminMediaById, getPublishedAdminMedia, updateAdminMedia, updateAdminMediaStatus } from "./db";
 import { storagePut } from "./storage";
-import { createCallSession, createReview, ensureCallBusiness, getApprovedReviewCount, getApprovedReviews, getCallSessionByCallId, getPendingReviews, getReviewStatusByReference, hasDuplicateReview, updateCallSession, updateReviewStatus } from "./db";
+import { createCallSession, createReview, ensureCallBusiness, getApprovedReviewCount, getApprovedReviews, getCallSessionByCallId, getPendingReviews, getReviewStatusByReference, hasDuplicateReview, importPendingReviews, updateCallSession, updateReviewStatus } from "./db";
+import { buildUserProvidedArabicReviewEntries } from "./userProvidedArabicReviews";
 
 const gateAttempts = new Map<string, { count: number; resetAt: number }>();
 const callAttempts = new Map<string, { count: number; resetAt: number }>();
@@ -145,6 +146,7 @@ export const appRouter = router({
       clearAdminSessionCookie(ctx.req, ctx.res);
       return { success: true } as const;
     }),
+    importUserProvidedArabic: adminSessionProcedure.mutation(() => importPendingReviews(buildUserProvidedArabicReviewEntries())),
     media: router({
       published: publicProcedure.query(() => getPublishedAdminMedia()),
       list: adminSessionProcedure.query(() => getAdminMedia()),

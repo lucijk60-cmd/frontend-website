@@ -287,3 +287,9 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 
 - [x] Replace the WhatsApp number and display value with `+966537358631` everywhere it is used.
 - [x] Verify generated WhatsApp hrefs, tests, production build, and save a checkpoint.
+
+## User-provided Arabic Review Import
+
+- [x] Preserve the 20 exact user-provided Arabic review texts without inventing names, photos, or identities.
+- [x] Import them as `Anonymous` and `pending` through a safe duplicate-protected path.
+- [x] Add regression coverage, verify database counts, and document that approval is required before public display.
