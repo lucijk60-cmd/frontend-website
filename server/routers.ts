@@ -2,6 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { ENV } from "./_core/env";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, adminSessionProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
@@ -10,6 +11,7 @@ import { createAdminMedia, createAdminMediaPair, getAdminMedia, getAdminMediaByI
 import { storagePut } from "./storage";
 import { createCallSession, createReview, ensureCallBusiness, getApprovedReviewCount, getApprovedReviews, getCallSessionByCallId, getPendingReviews, getReviewStatusByReference, hasDuplicateReview, importPendingReviews, updateCallSession, updateReviewStatus } from "./db";
 import { buildUserProvidedArabicReviewEntries } from "./userProvidedArabicReviews";
+import { buildIceServers } from "./turnConfig";
 
 const gateAttempts = new Map<string, { count: number; resetAt: number }>();
 const callAttempts = new Map<string, { count: number; resetAt: number }>();
@@ -239,6 +241,11 @@ export const appRouter = router({
         status: "calling" as const,
         expiresInSeconds: 15 * 60,
         signalingPath: "/api/call-signaling",
+        iceServers: buildIceServers({
+          turnUrl: ENV.turnUrl,
+          turnUsername: ENV.turnUsername,
+          turnCredential: ENV.turnCredential,
+        }),
       };
     }),
     status: publicProcedure.input(z.object({

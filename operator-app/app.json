@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "PPFStudio Operator",
+    "slug": "ppfstudio-operator",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "ppfstudio-operator",
+    "userInterfaceStyle": "dark",
+    "android": {
+      "package": "com.ppfstudio.operator",
+      "permissions": ["RECORD_AUDIO"]
+    },
+    "plugins": ["expo-router"],
+    "experiments": { "typedRoutes": true }
+  }
+}

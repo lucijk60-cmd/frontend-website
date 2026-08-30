@@ -259,10 +259,10 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 
 ## Android Operator App and TURN Phase
 
-- [ ] Audit current WebSocket signaling contract and determine the Android app/TURN prerequisites.
-- [ ] Add configurable ICE/TURN server settings and secure environment placeholders without hardcoding credentials.
-- [ ] Create an Android operator incoming-call client scaffold with Arabic-English call states and signaling connection.
-- [ ] Add tests, build validation, and deployment/setup documentation; record any required user credentials or hosting steps.
+- [x] Audit current WebSocket signaling contract and determine the Android app/TURN prerequisites.
+- [x] Add configurable ICE/TURN server settings and secure environment placeholders without hardcoding credentials.
+- [x] Create an Android operator incoming-call client scaffold with Arabic-English call states and signaling connection.
+- [x] Add tests, build validation, and deployment/setup documentation; record any required user credentials or hosting steps.
 
 ## User-requested Image Code Conversion
 
@@ -273,7 +273,7 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 ## Logo and Hero Code Conversion
 
 - [x] Audit the exact logo and post-language-selection hero asset references.
-- [ ] Convert the logo to an inline/code SVG representation and evaluate a safe hero representation.
+- [x] Convert the logo to an inline/code SVG representation and evaluate a safe hero representation.
 - [x] Preserve reversible fallbacks and validate bundle size, build, tests, and English/Arabic rendering.
 
 ## Local-only Embedded Image Version

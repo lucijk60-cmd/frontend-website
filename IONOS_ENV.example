@@ -22,3 +22,9 @@ PRIVATE_ACCESS_PASSWORD=replace-me
 
 # Required for the operator Android WebSocket client in the calling phase.
 PPF_OPERATOR_SIGNALING_TOKEN=replace-with-a-long-random-secret
+
+# Optional production WebRTC relay. Keep these server-side; never expose them in Expo/client code.
+# Leave all three blank for STUN-only development mode.
+PPF_TURN_URL=turns:turn.example.com:5349
+PPF_TURN_USERNAME=replace-with-turn-username
+PPF_TURN_CREDENTIAL=replace-with-turn-credential

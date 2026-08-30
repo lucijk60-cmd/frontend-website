@@ -8,4 +8,7 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   operatorSignalingToken: process.env.PPF_OPERATOR_SIGNALING_TOKEN ?? "",
+  turnUrl: process.env.PPF_TURN_URL ?? "",
+  turnUsername: process.env.PPF_TURN_USERNAME ?? "",
+  turnCredential: process.env.PPF_TURN_CREDENTIAL ?? "",
 };
