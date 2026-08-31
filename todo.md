@@ -322,3 +322,9 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Place Ad1 below eligible images, between image groups, and alongside the four video items without duplicating the global verification script.
 - [x] Add safe client-side push guards, responsive styling, tests, and production validation.
 - [x] Save a checkpoint and document that Google must approve/serve the ad unit before ads appear.
+
+## AdSense Not Loading Diagnosis
+
+- [x] Compare the AdSense-approved site domain with the currently deployed PPFStudio domain.
+- [x] Verify live verification script, Ad1 slot markup, browser console/network behavior, and ad-serving status.
+- [x] Apply any necessary correction, then re-run tests/build and document the serving dependency on Google approval.
