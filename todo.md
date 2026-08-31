@@ -307,3 +307,18 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Add the owner-provided AdSense verification script exactly once inside the site-wide HTML head.
 - [x] Verify the built HTML contains the exact AdSense client script and run tests/build validation.
 - [x] Save a checkpoint and document that AdSense verification must be completed for the matching domain.
+
+## AdSense Banner Placement and GitHub Verification
+
+- [x] Verify whether the exact AdSense verification script is present in the connected GitHub repository and latest remote commit.
+- [x] Audit the picture and four-video rendering locations for the requested banner insertion pattern.
+- [x] Obtain/confirm real approved AdSense ad-unit snippets before rendering monetized ads; verification code alone is not an ad unit.
+- [x] Add responsive ad slots beneath/among media according to the confirmed pattern without inventing ad content or disrupting media controls.
+- [x] Add placement tests, responsive verification, production build, and GitHub-synced checkpoint.
+
+## Ad1 Responsive Ad Unit Placement
+
+- [x] Add a reusable AdSense Ad1 component using the owner-provided client and slot values.
+- [x] Place Ad1 below eligible images, between image groups, and alongside the four video items without duplicating the global verification script.
+- [x] Add safe client-side push guards, responsive styling, tests, and production validation.
+- [x] Save a checkpoint and document that Google must approve/serve the ad unit before ads appear.

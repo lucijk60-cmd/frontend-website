@@ -692,3 +692,8 @@ body:not(.no-reveal) .reveal { animation: reveal-in 650ms var(--ease-out) forwar
 .admin-breakdown-row { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.08); color: #c7c5bc; font-size: 12px; }
 .admin-breakdown-row strong { color: #f2efe8; font-weight: 500; }
 @media (max-width: 600px) { .admin-metric-grid, .admin-breakdown-grid { grid-template-columns: 1fr; } }
+
+.adsense-unit { grid-column: 1 / -1; min-height: 90px; width: 100%; margin: 14px 0 20px; padding: 8px 0; overflow: hidden; text-align: center; background: rgba(255,255,255,.018); }
+.adsense-unit .adsbygoogle { min-height: 60px; width: 100%; }
+.gallery-ad, .video-ad { border-top: 1px solid rgba(217,185,121,.14); border-bottom: 1px solid rgba(217,185,121,.14); }
+.video-ad { margin: 18px 0 28px; }

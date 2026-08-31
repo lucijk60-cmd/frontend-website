@@ -1,5 +1,5 @@
 /* Obsidian Atelier: cinematic editorial luxury, graphite surfaces, restrained champagne-gold precision cues. */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { skipToken } from "@tanstack/react-query";
 import {
@@ -33,6 +33,7 @@ import { InlineBrandMark } from "@/components/InlineBrandMark";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import AdSenseUnit from "@/components/AdSenseUnit";
 import { selectPublishedMedia, selectVideoSource } from "@/lib/media";
 import { getLocalizedReviewText, getReviewSubmissionNotice, normalizeReviewReference } from "@/lib/reviews";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -392,7 +393,7 @@ export default function Home() {
           <div className="gallery-grid">
             {filteredGallery.map((item, index) => {
               const originalIndex = localizedGalleryItems.findIndex((galleryItem) => galleryItem.id === item.id);
-              return <Reveal key={item.id} delay={index * 55} className={`gallery-card gallery-card--${item.id}`}><button onClick={() => setLightboxIndex(originalIndex)} aria-label={`${c.openImage}: ${item.alt}`}><img src={item.src} alt={item.alt} loading="lazy" decoding="async" sizes="(max-width: 720px) 100vw, 50vw" /><span className="gallery-shade" /><span className="gallery-meta"><span>0{item.id}</span><strong>{c.galleryLabels[localizedGalleryItems.findIndex((galleryItem) => galleryItem.id === item.id)]}</strong><ArrowUpRight size={18} /></span></button></Reveal>;
+              return <Fragment key={item.id}><Reveal delay={index * 55} className={`gallery-card gallery-card--${item.id}`}><button onClick={() => setLightboxIndex(originalIndex)} aria-label={`${c.openImage}: ${item.alt}`}><img src={item.src} alt={item.alt} loading="lazy" decoding="async" sizes="(max-width: 720px) 100vw, 50vw" /><span className="gallery-shade" /><span className="gallery-meta"><span>0{item.id}</span><strong>{c.galleryLabels[localizedGalleryItems.findIndex((galleryItem) => galleryItem.id === item.id)]}</strong><ArrowUpRight size={18} /></span></button></Reveal><AdSenseUnit className="gallery-ad" /></Fragment>;
             })}
           </div>
         </section>
@@ -411,7 +412,7 @@ export default function Home() {
         </section>
 
         <section className="section video-section">
-          <div className="page-width"><Reveal><SectionHeader eyebrow={c.videoEyebrow} title={c.videoTitle} body={c.videoBody} /></Reveal><div className="video-grid">{videoDisplayItems.map((item, index) => <Reveal key={`${item.title}-${index}`} delay={index * 55} className="video-card"><button onClick={() => setVideoIndex(index)} aria-label={`${c.playVideo}: ${item.title}`}><img src={item.poster} alt="" loading="lazy" decoding="async" sizes="(max-width: 720px) 100vw, 50vw" /><span className="video-shade" /><span className="video-play"><CirclePlay size={42} strokeWidth={1.2} /></span><span className="video-label"><span>0{index + 1}</span>{item.title}</span></button></Reveal>)}</div></div>
+          <div className="page-width"><Reveal><SectionHeader eyebrow={c.videoEyebrow} title={c.videoTitle} body={c.videoBody} /></Reveal><div className="video-grid">{videoDisplayItems.map((item, index) => <Fragment key={`${item.title}-${index}`}><Reveal delay={index * 55} className="video-card"><button onClick={() => setVideoIndex(index)} aria-label={`${c.playVideo}: ${item.title}`}><img src={item.poster} alt="" loading="lazy" decoding="async" sizes="(max-width: 720px) 100vw, 50vw" /><span className="video-shade" /><span className="video-play"><CirclePlay size={42} strokeWidth={1.2} /></span><span className="video-label"><span>0{index + 1}</span>{item.title}</span></button></Reveal><AdSenseUnit className="video-ad" /></Fragment>)}</div></div>
         </section>
 
         <section id="process" className="section process-section page-width">
