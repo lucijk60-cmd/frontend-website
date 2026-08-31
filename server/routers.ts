@@ -9,7 +9,7 @@ import { TRPCError } from "@trpc/server";
 import { clearAdminSessionCookie, createAdminSession, setAdminSessionCookie, verifyAdminCredentials } from "./adminAuth";
 import { createAdminMedia, createAdminMediaPair, getAdminMedia, getAdminMediaById, getPublishedAdminMedia, updateAdminMedia, updateAdminMediaStatus } from "./db";
 import { storagePut } from "./storage";
-import { createCallSession, createReview, ensureCallBusiness, getApprovedReviewCount, getApprovedReviews, getCallSessionByCallId, getPendingReviews, getReviewStatusByReference, hasDuplicateReview, importPendingReviews, updateCallSession, updateReviewStatus } from "./db";
+import { createCallSession, createReview, ensureCallBusiness, getApprovedReviewCount, getApprovedReviews, getCallSessionByCallId, getPendingReviews, getReviewStatusByReference, getVisitorAnalytics, hasDuplicateReview, importPendingReviews, updateCallSession, updateReviewStatus } from "./db";
 import { buildUserProvidedArabicReviewEntries } from "./userProvidedArabicReviews";
 import { buildIceServers } from "./turnConfig";
 
@@ -131,13 +131,13 @@ export const appRouter = router({
     verifyGate: publicProcedure.input(z.object({
       password: z.string().min(1).max(200),
       ppfPassword: z.string().min(1).max(200),
-      adminPassword: z.string().min(1).max(200),
-      privatePassword: z.string().min(1).max(200),
+      adminPassword: z.string().min(1).max(200).optional(),
+      privatePassword: z.string().min(1).max(200).optional(),
     })).mutation(async ({ input, ctx }) => {
       assertGateRateLimit(ctx.req);
       if (!verifyAdminCredentials(input)) {
         registerGateFailure(ctx.req);
-        throw new TRPCError({ code: "FORBIDDEN", message: "The four passwords do not match." });
+        throw new TRPCError({ code: "FORBIDDEN", message: "The first two passwords do not match." });
       }
       gateAttempts.delete(getRequestKey(ctx.req));
       const token = await createAdminSession();
@@ -149,6 +149,7 @@ export const appRouter = router({
       return { success: true } as const;
     }),
     importUserProvidedArabic: adminSessionProcedure.mutation(() => importPendingReviews(buildUserProvidedArabicReviewEntries())),
+    analytics: adminSessionProcedure.query(() => getVisitorAnalytics()),
     media: router({
       published: publicProcedure.query(() => getPublishedAdminMedia()),
       list: adminSessionProcedure.query(() => getAdminMedia()),

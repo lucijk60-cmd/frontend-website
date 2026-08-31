@@ -43,6 +43,13 @@
       "when": 1787922341714,
       "tag": "0005_early_revanche",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1788074710536,
+      "tag": "0006_organic_pet_avengers",
+      "breakpoints": true
     }
   ]
 }

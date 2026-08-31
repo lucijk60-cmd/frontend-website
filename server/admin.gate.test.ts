@@ -28,6 +28,22 @@ describe("admin.verifyGate", () => {
     expect(cookies[0]?.options).toMatchObject({ sameSite: "none", secure: true });
   });
 
+  it("accepts the first-two-password Admin flow", async () => {
+    const cookies: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
+    const ctx = {
+      user: null,
+      req: { protocol: "https", headers: {}, ip: "127.0.0.3" } as TrpcContext["req"],
+      res: { cookie: (name: string, value: string, options?: Record<string, unknown>) => cookies.push({ name, value, options }) } as TrpcContext["res"],
+    } satisfies TrpcContext;
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.admin.verifyGate({
+      password: process.env.ADMIN_GATE_PASSWORD ?? "",
+      ppfPassword: process.env.PPF_GATE_PASSWORD ?? "",
+    });
+    expect(result).toEqual({ success: true });
+    expect(cookies).toHaveLength(1);
+  });
+
   it("rejects a gate when any one of the four secrets is incorrect", async () => {
     const ctx = {
       user: null,

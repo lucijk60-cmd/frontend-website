@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/mysql2";
+import { createHash } from "node:crypto";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
-import { AdminMedia, CallSession, InsertAdminMedia, InsertReview, InsertUser, adminMedia, callBusinesses, callSessions, reviews, users } from "../drizzle/schema";
+import { AdminMedia, CallSession, InsertAdminMedia, InsertReview, InsertUser, InsertVisitorEvent, adminMedia, callBusinesses, callSessions, reviews, users, visitorEvents } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -16,6 +17,35 @@ export async function getDb() {
     }
   }
   return _db;
+}
+
+export async function recordVisitorEvent(input: Omit<InsertVisitorEvent, "id" | "createdAt">) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(visitorEvents).values(input);
+}
+
+export function hashVisitorKey(value: string) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+export async function getVisitorAnalytics() {
+  const db = await getDb();
+  if (!db) return { totalViews: 0, uniqueVisitors: 0, byCountry: [], byDevice: [], recentViews: [] };
+  const [totals, byCountry, byDevice, recentViews] = await Promise.all([
+    db.select({ totalViews: sql<number>`count(*)`, uniqueVisitors: sql<number>`count(distinct ${visitorEvents.visitorKeyHash})` }).from(visitorEvents),
+    db.select({ countryCode: visitorEvents.countryCode, views: sql<number>`count(*)` }).from(visitorEvents).groupBy(visitorEvents.countryCode).orderBy(desc(sql`count(*)`)).limit(10),
+    db.select({ deviceClass: visitorEvents.deviceClass, views: sql<number>`count(*)` }).from(visitorEvents).groupBy(visitorEvents.deviceClass).orderBy(desc(sql`count(*)`)),
+    db.select({ date: sql<string>`date(${visitorEvents.createdAt})`, views: sql<number>`count(*)` }).from(visitorEvents).groupBy(sql`date(${visitorEvents.createdAt})`).orderBy(desc(sql`date(${visitorEvents.createdAt})`)).limit(14),
+  ]);
+  const summary = totals[0] ?? { totalViews: 0, uniqueVisitors: 0 };
+  return {
+    totalViews: Number(summary.totalViews ?? 0),
+    uniqueVisitors: Number(summary.uniqueVisitors ?? 0),
+    byCountry: byCountry.map(item => ({ countryCode: item.countryCode, views: Number(item.views ?? 0) })),
+    byDevice: byDevice.map(item => ({ deviceClass: item.deviceClass, views: Number(item.views ?? 0) })),
+    recentViews: recentViews.map(item => ({ date: item.date, views: Number(item.views ?? 0) })),
+  };
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {

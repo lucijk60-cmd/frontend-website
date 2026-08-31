@@ -6,7 +6,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter, sanitizeFileName, validateUpload } from "../routers";
-import { createAdminMedia } from "../db";
+import { createAdminMedia, hashVisitorKey, recordVisitorEvent } from "../db";
 import { storagePut } from "../storage";
 import { isAdminSession } from "../adminAuth";
 import { registerCallSignaling } from "../callSignaling";
@@ -34,6 +34,22 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 
 async function startServer() {
   const app = express();
+  app.use((req, _res, next) => {
+    if (req.method === "GET" && req.path === "/") {
+      const forwardedFor = req.header("x-forwarded-for")?.split(",")[0]?.trim() ?? req.ip ?? "unknown";
+      const userAgent = req.header("user-agent") ?? "unknown";
+      const deviceClass = /ipad|tablet/i.test(userAgent) ? "tablet" : /mobile|android|iphone/i.test(userAgent) ? "mobile" : /windows|macintosh|linux/i.test(userAgent) ? "desktop" : "unknown";
+      const countryCode = (req.header("cf-ipcountry") ?? req.header("x-country-code") ?? req.header("x-vercel-ip-country") ?? "unknown").slice(0, 8).toUpperCase();
+      void recordVisitorEvent({
+        visitorKeyHash: hashVisitorKey(`${forwardedFor}|${userAgent}`),
+        path: "/",
+        countryCode: countryCode || "unknown",
+        deviceClass,
+        referrer: req.header("referer")?.slice(0, 512) ?? null,
+      }).catch(error => console.warn("[Analytics] Visitor event not recorded:", error));
+    }
+    next();
+  });
   const server = createServer(app);
   registerCallSignaling(server);
   // Configure body parser with larger size limit for file uploads

@@ -681,3 +681,14 @@ body:not(.no-reveal) .reveal { animation: reveal-in 650ms var(--ease-out) forwar
 @media (max-width: 640px) {
   .admin-review-import-card .admin-submit { width: 100%; }
 }
+
+.admin-analytics-card { max-width: 1320px; margin: 0 auto 24px; padding: clamp(22px, 3vw, 38px); border: 1px solid rgba(217,185,121,.22); background: linear-gradient(145deg, rgba(255,255,255,.045), rgba(255,255,255,.015)); box-shadow: 0 24px 70px rgba(0,0,0,.22); }
+.admin-metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 24px; }
+.admin-metric { display: grid; gap: 8px; padding: 18px; border: 1px solid rgba(255,255,255,.1); background: rgba(0,0,0,.18); }
+.admin-metric span, .admin-breakdown-grid h3 { color: #9b9c95; font-size: 10px; letter-spacing: .13em; text-transform: uppercase; }
+.admin-metric strong { color: #f0d399; font-family: Georgia, serif; font-size: 34px; font-weight: 400; }
+.admin-breakdown-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+.admin-breakdown-grid h3 { margin: 0 0 12px; }
+.admin-breakdown-row { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.08); color: #c7c5bc; font-size: 12px; }
+.admin-breakdown-row strong { color: #f2efe8; font-weight: 500; }
+@media (max-width: 600px) { .admin-metric-grid, .admin-breakdown-grid { grid-template-columns: 1fr; } }

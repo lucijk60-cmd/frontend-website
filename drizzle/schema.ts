@@ -25,6 +25,19 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
+export const visitorEvents = mysqlTable("visitor_events", {
+  id: int("id").autoincrement().primaryKey(),
+  visitorKeyHash: varchar("visitorKeyHash", { length: 64 }).notNull(),
+  path: varchar("path", { length: 255 }).notNull(),
+  countryCode: varchar("countryCode", { length: 8 }).notNull().default("unknown"),
+  deviceClass: mysqlEnum("deviceClass", ["desktop", "mobile", "tablet", "unknown"]).default("unknown").notNull(),
+  referrer: varchar("referrer", { length: 512 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type VisitorEvent = typeof visitorEvents.$inferSelect;
+export type InsertVisitorEvent = typeof visitorEvents.$inferInsert;
+
 export const callBusinesses = mysqlTable("call_businesses", {
   id: int("id").autoincrement().primaryKey(),
   businessId: varchar("businessId", { length: 64 }).notNull().unique(),

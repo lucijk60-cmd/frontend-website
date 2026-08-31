@@ -20,20 +20,23 @@ function safeEqual(left: string, right: string) {
 export function verifyAdminCredentials(input: {
   password: string;
   ppfPassword: string;
-  adminPassword: string;
-  privatePassword: string;
+  adminPassword?: string;
+  privatePassword?: string;
 }) {
-  const configured = [
-    process.env.ADMIN_GATE_PASSWORD,
-    process.env.PPF_GATE_PASSWORD,
-    process.env.ADMIN_PANEL_PASSWORD,
-    process.env.PRIVATE_ACCESS_PASSWORD,
-  ];
+  const firstTwo = [process.env.ADMIN_GATE_PASSWORD, process.env.PPF_GATE_PASSWORD];
+  if (firstTwo.some(value => !value)) return false;
 
-  if (configured.some(value => !value)) return false;
+  // The public Admin screen uses the first two configured secrets. The optional
+  // legacy fields remain supported for existing credentialed integrations.
+  if (!input.adminPassword && !input.privatePassword) {
+    return [input.password, input.ppfPassword]
+      .every((value, index) => safeEqual(value, firstTwo[index] as string));
+  }
 
+  const allFour = [...firstTwo, process.env.ADMIN_PANEL_PASSWORD, process.env.PRIVATE_ACCESS_PASSWORD];
+  if (allFour.some(value => !value)) return false;
   return [input.password, input.ppfPassword, input.adminPassword, input.privatePassword]
-    .every((value, index) => safeEqual(value, configured[index] as string));
+    .every((value, index) => typeof value === "string" && typeof allFour[index] === "string" && safeEqual(value, allFour[index]));
 }
 
 export async function createAdminSession() {

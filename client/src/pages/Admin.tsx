@@ -20,9 +20,16 @@ const copy = {
     eyebrow: "PPFSTUDIO / PRIVATE CONTROL ROOM",
     title: "Media administration",
     intro: "Upload, review and publish the visual assets used across the atelier experience.",
+    analyticsTitle: "Visitor analytics",
+    analyticsBody: "Real page views collected by the protected website runtime. Empty values mean no events have been recorded yet.",
+    totalViews: "Total views",
+    uniqueVisitors: "Unique visitors",
+    countries: "Top countries",
+    devices: "Devices",
+    noData: "No visitor data recorded yet.",
     gateTitle: "Admin access",
-    gateBody: "Enter all four private passwords to continue.",
-    fields: ["Password", "PPF Password", "Admin Password", "Private Password"],
+    gateBody: "Enter the first two private passwords to continue.",
+    fields: ["Password", "PPF Password"],
     enter: "Enter panel",
     back: "Back to website",
     logout: "Log out",
@@ -72,9 +79,16 @@ const copy = {
     eyebrow: "PPFSTUDIO / غرفة التحكم الخاصة",
     title: "إدارة الوسائط",
     intro: "ارفع وراجع وانشر الصور والفيديوهات المستخدمة في تجربة الاستوديو.",
+    analyticsTitle: "تحليلات الزوار",
+    analyticsBody: "مشاهدات حقيقية تجمعها المنصة المحمية. تعني القيم الفارغة أنه لم يتم تسجيل زيارات بعد.",
+    totalViews: "إجمالي المشاهدات",
+    uniqueVisitors: "الزوار الفريدون",
+    countries: "أكثر الدول",
+    devices: "الأجهزة",
+    noData: "لم يتم تسجيل بيانات زوار بعد.",
     gateTitle: "دخول الإدارة",
-    gateBody: "أدخل كلمات المرور الخاصة الأربع للمتابعة.",
-    fields: ["كلمة المرور", "كلمة مرور PPF", "كلمة مرور الإدارة", "كلمة المرور الخاصة"],
+    gateBody: "أدخل كلمتي المرور الخاصتين الأوليين للمتابعة.",
+    fields: ["كلمة المرور", "كلمة مرور PPF"],
     enter: "دخول اللوحة",
     back: "العودة إلى الموقع",
     logout: "تسجيل الخروج",
@@ -137,7 +151,7 @@ export default function Admin() {
   const [language, setLanguage] = useState<"en" | "ar">("en");
   const c = copy[language];
   const [authenticated, setAuthenticated] = useState(false);
-  const [gateValues, setGateValues] = useState(["", "", "", ""]);
+  const [gateValues, setGateValues] = useState(["", ""]);
   const [kind, setKind] = useState<UploadKind>("image");
   const [title, setTitle] = useState("");
   const [englishFile, setEnglishFile] = useState<SelectedAsset>(null);
@@ -161,6 +175,7 @@ export default function Admin() {
   useEffect(() => () => { if (arabicPreview) URL.revokeObjectURL(arabicPreview); }, [arabicPreview]);
 
   const mediaQuery = trpc.admin.media.list.useQuery(undefined, { enabled: authenticated, retry: false });
+  const analyticsQuery = trpc.admin.analytics.useQuery(undefined, { enabled: authenticated, retry: false, refetchInterval: 60_000 });
   const verifyGate = trpc.admin.verifyGate.useMutation({
     onSuccess: () => {
       setAuthenticated(true);
@@ -171,8 +186,8 @@ export default function Admin() {
       error.data?.code === "TOO_MANY_REQUESTS"
         ? error.message
         : language === "ar"
-          ? "تعذر الدخول. تحقق من كلمات المرور الأربع وحاول مرة أخرى."
-          : "Login failed. Check all four passwords and try again."
+          ? "تعذر الدخول. تحقق من كلمتي المرور الأوليين وحاول مرة أخرى."
+          : "Login failed. Check the first two passwords and try again."
     ),
   });
   const updateMedia = trpc.admin.media.update.useMutation({
@@ -197,7 +212,7 @@ export default function Admin() {
   const logout = trpc.admin.logout.useMutation({
     onSuccess: () => {
       setAuthenticated(false);
-      setGateValues(["", "", "", ""]);
+      setGateValues(["", ""]);
     },
   });
 
@@ -230,14 +245,12 @@ export default function Admin() {
   const submitGate = (event: React.FormEvent) => {
     event.preventDefault();
     if (gateValues.some(value => !value.trim())) {
-      toast.error(language === "ar" ? "أكمل كلمات المرور الأربع." : "Complete all four passwords.");
+      toast.error(language === "ar" ? "أكمل كلمتي المرور الأوليين." : "Complete the first two passwords.");
       return;
     }
     verifyGate.mutate({
       password: gateValues[0],
       ppfPassword: gateValues[1],
-      adminPassword: gateValues[2],
-      privatePassword: gateValues[3],
     });
   };
 
@@ -298,6 +311,14 @@ export default function Admin() {
     <main className="admin-page" dir={language === "ar" ? "rtl" : "ltr"}>
       <div className="admin-topbar"><button className="admin-back" onClick={() => setLocation("/")}><ArrowLeft size={16} /> {c.back}</button><div className="admin-top-actions"><button className="admin-language" onClick={() => setLanguage(language === "en" ? "ar" : "en")}>{language === "en" ? "العربية" : "English"}</button><button className="admin-logout" onClick={() => logout.mutate()}><LogOut size={16} /> {c.logout}</button></div></div>
       <section className="admin-hero"><div><span className="admin-eyebrow">{c.eyebrow}</span><h1>{c.title}</h1><p>{c.intro}</p></div><div className="admin-hero-stamp">PPF<br /><span>PRIVATE</span></div></section>
+      <section className="admin-analytics-card" aria-labelledby="visitor-analytics-title">
+        <div className="admin-card-heading"><span className="admin-index">00</span><h2 id="visitor-analytics-title">{c.analyticsTitle}</h2></div>
+        <p className="admin-review-import-copy">{c.analyticsBody}</p>
+        {analyticsQuery.isLoading ? <div className="admin-empty">…</div> : analyticsQuery.error ? <div className="admin-upload-status admin-upload-status--error" role="alert">{language === "ar" ? "تعذر تحميل التحليلات." : "Analytics could not be loaded."}</div> : analyticsQuery.data && analyticsQuery.data.totalViews > 0 ? <>
+          <div className="admin-metric-grid"><div className="admin-metric"><span>{c.totalViews}</span><strong>{analyticsQuery.data.totalViews.toLocaleString()}</strong></div><div className="admin-metric"><span>{c.uniqueVisitors}</span><strong>{analyticsQuery.data.uniqueVisitors.toLocaleString()}</strong></div></div>
+          <div className="admin-breakdown-grid"><div><h3>{c.countries}</h3>{analyticsQuery.data.byCountry.map(item => <div className="admin-breakdown-row" key={item.countryCode}><span>{item.countryCode}</span><strong>{item.views.toLocaleString()}</strong></div>)}</div><div><h3>{c.devices}</h3>{analyticsQuery.data.byDevice.map(item => <div className="admin-breakdown-row" key={item.deviceClass}><span>{item.deviceClass}</span><strong>{item.views.toLocaleString()}</strong></div>)}</div></div>
+        </> : <div className="admin-empty">{c.noData}</div>}
+      </section>
       <section className="admin-layout">
         <section className="admin-upload-card admin-review-import-card">
           <div className="admin-card-heading"><span className="admin-index">03</span><h2>{c.reviewImportTitle}</h2></div>

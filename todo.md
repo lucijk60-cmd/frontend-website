@@ -293,3 +293,11 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Preserve the 20 exact user-provided Arabic review texts without inventing names, photos, or identities.
 - [x] Import them as `Anonymous` and `pending` through a safe duplicate-protected path.
 - [x] Add regression coverage, verify database counts, and document that approval is required before public display.
+
+## Admin Access and Visitor Analytics Dashboard
+
+- [x] Diagnose the Admin `Not Found`/login path from the three-dot menu and verify route registration.
+- [x] Add a secure two-password access mode using the first two configured admin secrets without exposing credentials; preserve the existing four-password option unless explicitly replaced.
+- [x] Add protected visitor analytics summary and breakdowns using real collected data only; do not invent visitor counts, locations, or devices.
+- [x] Organize protected media upload, review moderation, and website-control actions into the Admin dashboard.
+- [x] Add regression tests, responsive verification, build validation, and deployment documentation for the Admin dashboard.
