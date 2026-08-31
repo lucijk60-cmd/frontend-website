@@ -301,3 +301,9 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Add protected visitor analytics summary and breakdowns using real collected data only; do not invent visitor counts, locations, or devices.
 - [x] Organize protected media upload, review moderation, and website-control actions into the Admin dashboard.
 - [x] Add regression tests, responsive verification, build validation, and deployment documentation for the Admin dashboard.
+
+## Google AdSense Verification Script
+
+- [x] Add the owner-provided AdSense verification script exactly once inside the site-wide HTML head.
+- [x] Verify the built HTML contains the exact AdSense client script and run tests/build validation.
+- [x] Save a checkpoint and document that AdSense verification must be completed for the matching domain.
