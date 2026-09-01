@@ -328,3 +328,10 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Compare the AdSense-approved site domain with the currently deployed PPFStudio domain.
 - [x] Verify live verification script, Ad1 slot markup, browser console/network behavior, and ad-serving status.
 - [x] Apply any necessary correction, then re-run tests/build and document the serving dependency on Google approval.
+
+## Scroll-triggered Media Ad Reveal
+
+- [x] Add an accessible scroll-triggered split/reveal animation for the image and Ad1 relationship.
+- [x] Keep ad slots clearly identifiable, layout-stable, responsive, and non-obstructive on desktop/mobile.
+- [x] Add reduced-motion fallback, regression coverage, responsive verification, and build validation.
+- [x] Sync the completed animation update to GitHub without publishing to Manus hosting.

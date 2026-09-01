@@ -393,7 +393,7 @@ export default function Home() {
           <div className="gallery-grid">
             {filteredGallery.map((item, index) => {
               const originalIndex = localizedGalleryItems.findIndex((galleryItem) => galleryItem.id === item.id);
-              return <Fragment key={item.id}><Reveal delay={index * 55} className={`gallery-card gallery-card--${item.id}`}><button onClick={() => setLightboxIndex(originalIndex)} aria-label={`${c.openImage}: ${item.alt}`}><img src={item.src} alt={item.alt} loading="lazy" decoding="async" sizes="(max-width: 720px) 100vw, 50vw" /><span className="gallery-shade" /><span className="gallery-meta"><span>0{item.id}</span><strong>{c.galleryLabels[localizedGalleryItems.findIndex((galleryItem) => galleryItem.id === item.id)]}</strong><ArrowUpRight size={18} /></span></button></Reveal><AdSenseUnit className="gallery-ad" /></Fragment>;
+              return <Fragment key={item.id}><div className={`gallery-media-unit gallery-media-unit--${item.id}`}><Reveal delay={index * 55} className={`gallery-card gallery-card--${item.id}`}><button onClick={() => setLightboxIndex(originalIndex)} aria-label={`${c.openImage}: ${item.alt}`}><img src={item.src} alt={item.alt} loading="lazy" decoding="async" sizes="(max-width: 720px) 100vw, 50vw" /><span className="gallery-shade" /><span className="gallery-meta"><span>0{item.id}</span><strong>{c.galleryLabels[localizedGalleryItems.findIndex((galleryItem) => galleryItem.id === item.id)]}</strong><ArrowUpRight size={18} /></span></button></Reveal><Reveal className="media-ad-reveal"><AdSenseUnit className="gallery-ad" /></Reveal></div></Fragment>;
             })}
           </div>
         </section>
@@ -412,7 +412,7 @@ export default function Home() {
         </section>
 
         <section className="section video-section">
-          <div className="page-width"><Reveal><SectionHeader eyebrow={c.videoEyebrow} title={c.videoTitle} body={c.videoBody} /></Reveal><div className="video-grid">{videoDisplayItems.map((item, index) => <Fragment key={`${item.title}-${index}`}><Reveal delay={index * 55} className="video-card"><button onClick={() => setVideoIndex(index)} aria-label={`${c.playVideo}: ${item.title}`}><img src={item.poster} alt="" loading="lazy" decoding="async" sizes="(max-width: 720px) 100vw, 50vw" /><span className="video-shade" /><span className="video-play"><CirclePlay size={42} strokeWidth={1.2} /></span><span className="video-label"><span>0{index + 1}</span>{item.title}</span></button></Reveal><AdSenseUnit className="video-ad" /></Fragment>)}</div></div>
+          <div className="page-width"><Reveal><SectionHeader eyebrow={c.videoEyebrow} title={c.videoTitle} body={c.videoBody} /></Reveal><div className="video-grid">{videoDisplayItems.map((item, index) => <Fragment key={`${item.title}-${index}`}><div className="video-media-unit"><Reveal delay={index * 55} className="video-card"><button onClick={() => setVideoIndex(index)} aria-label={`${c.playVideo}: ${item.title}`}><img src={item.poster} alt="" loading="lazy" decoding="async" sizes="(max-width: 720px) 100vw, 50vw" /><span className="video-shade" /><span className="video-play"><CirclePlay size={42} strokeWidth={1.2} /></span><span className="video-label"><span>0{index + 1}</span>{item.title}</span></button></Reveal><Reveal className="media-ad-reveal"><AdSenseUnit className="video-ad" /></Reveal></div></Fragment>)}</div></div>
         </section>
 
         <section id="process" className="section process-section page-width">
