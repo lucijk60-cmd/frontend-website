@@ -335,3 +335,9 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Keep ad slots clearly identifiable, layout-stable, responsive, and non-obstructive on desktop/mobile.
 - [x] Add reduced-motion fallback, regression coverage, responsive verification, and build validation.
 - [x] Sync the completed animation update to GitHub without publishing to Manus hosting.
+
+## AdSense Serving Configuration Audit
+
+- [x] Audit GitHub code and current live/domain status for AdSense serving prerequisites.
+- [x] Check verification script, Ad1 markup/initialization, ads.txt, CSP, and analytics/static hosting interactions.
+- [x] Separate code-side findings from Google approval/domain/serving requirements and document any required correction.
