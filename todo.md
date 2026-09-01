@@ -348,3 +348,17 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Convert remaining eligible image binaries to deterministic embedded data modules without inventing or altering visual content.
 - [x] Update site content/component mappings and preserve safe fallback behavior where required.
 - [x] Validate image integrity, bundle size, tests, TypeScript, build, responsive rendering, and GitHub-only sync.
+
+## Complete Video Code/Data Embedding
+
+- [x] Inventory the four video sources and locate any available local or repository video binaries.
+- [ ] Convert available video binaries to deterministic Base64/data modules without fabricating or substituting footage.
+- [ ] Update video source mapping so the website loads embedded video data where conversion is feasible.
+- [ ] Validate media integrity, browser playback, bundle/repository size, tests, build, and GitHub-only sync; document unavailable sources or deployment limits.
+
+## 44749.mp4 Integration
+
+- [x] Audit the uploaded 44749.mp4 file for size, codec, duration, and browser compatibility.
+- [x] Embed the verified video as code/data where feasible without substituting or fabricating footage.
+- [x] Assign 44749.mp4 to the appropriate video source/poster mapping and preserve playback controls.
+- [x] Validate integrity, bundle size, tests, build, and GitHub-only sync.

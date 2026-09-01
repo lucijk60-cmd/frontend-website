@@ -241,7 +241,7 @@ export default function Home() {
     return [...staticItems, ...uploadedItems];
   }, [isArabic, language, publishedMediaQuery.data]);
   const videoDisplayItems = useMemo(() => {
-    const staticVideos = videoItems.map(item => ({ ...item, poster: item.src, isUploaded: false }));
+    const staticVideos = videoItems.map(item => ({ ...item, poster: item.src, src: "videoSrc" in item && item.videoSrc ? item.videoSrc : item.src, isUploaded: "isEmbedded" in item ? item.isEmbedded : false }));
     const uploadedVideos = selectPublishedMedia(publishedMediaQuery.data ?? [], language, "video")
       .map((item) => ({ title: item.title, src: item.url, poster: images.galleryCoupe, isUploaded: true }));
     return [...staticVideos, ...uploadedVideos];

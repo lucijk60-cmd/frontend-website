@@ -1,5 +1,6 @@
 export type Language = "en" | "ar";
 import { embeddedImages } from "./embeddedImageAssets";
+import { embeddedVideos } from "./embeddedVideoAssets";
 
 export const BRAND_NAME = "PPFStudio";
 
@@ -310,7 +311,7 @@ export const galleryItems = [
 ] as const;
 
 export const videoItems = [
-  { title: "PPF Installation", src: images.installation },
+  { title: "PPF Installation", src: images.installation, videoSrc: embeddedVideos.ppfInstallation, isEmbedded: true },
   { title: "Before & After", src: images.detailSuv },
   { title: "Vehicle Reveal", src: images.galleryCoupe },
   { title: "Final Result", src: images.hero },
