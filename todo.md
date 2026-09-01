@@ -341,3 +341,10 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Audit GitHub code and current live/domain status for AdSense serving prerequisites.
 - [x] Check verification script, Ad1 markup/initialization, ads.txt, CSP, and analytics/static hosting interactions.
 - [x] Separate code-side findings from Google approval/domain/serving requirements and document any required correction.
+
+## Complete Image Code/Data Conversion
+
+- [x] Inventory every image actually used by the website and identify any remaining file/storage references.
+- [x] Convert remaining eligible image binaries to deterministic embedded data modules without inventing or altering visual content.
+- [x] Update site content/component mappings and preserve safe fallback behavior where required.
+- [x] Validate image integrity, bundle size, tests, TypeScript, build, responsive rendering, and GitHub-only sync.
