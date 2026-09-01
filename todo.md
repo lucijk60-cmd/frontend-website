@@ -362,3 +362,10 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Embed the verified video as code/data where feasible without substituting or fabricating footage.
 - [x] Assign 44749.mp4 to the appropriate video source/poster mapping and preserve playback controls.
 - [x] Validate integrity, bundle size, tests, build, and GitHub-only sync.
+
+## User Image Loading Fix
+
+- [x] Audit the exact user-provided image binaries against the active embedded image map and visible site references.
+- [x] Convert any missing supplied images into deterministic embedded data without changing their visual content.
+- [x] Remap all active image aliases to embedded sources and remove unintended storage-only paths.
+- [x] Validate image rendering, integrity, tests, build, and GitHub-only sync.

@@ -41,7 +41,15 @@ const externalImages = {
 } as const;
 
 export const USE_EMBEDDED_IMAGES = true;
-export const images = USE_EMBEDDED_IMAGES ? { ...externalImages, ...embeddedImages } : externalImages;
+export const images = USE_EMBEDDED_IMAGES
+  ? {
+      ...externalImages,
+      ...embeddedImages,
+      installation: embeddedImages.galleryCoupe,
+      secondaryDetail: embeddedImages.detailSuv,
+      secondaryStudio: embeddedImages.galleryCoupe,
+    }
+  : externalImages;
 export const externalImageFallbacks = externalImages;
 
 export const translations = {
