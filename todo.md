@@ -369,3 +369,17 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Convert any missing supplied images into deterministic embedded data without changing their visual content.
 - [x] Remap all active image aliases to embedded sources and remove unintended storage-only paths.
 - [x] Validate image rendering, integrity, tests, build, and GitHub-only sync.
+
+## AdSense Approval Readiness Recheck
+
+- [x] Re-audit the exact verification script and Ad1 client/slot configuration in GitHub.
+- [x] Recheck root-level ads.txt, initialization timing, duplicate scripts, and CSP/network compatibility.
+- [x] Reconfirm live domain, hosting availability, and Google review requirements; document any blocker.
+
+## Legal and Contact Pages
+
+- [x] Audit current routes, footer links, contact methods, review/call data collection, and analytics disclosures.
+- [x] Draft bilingual English/Arabic Privacy Policy and Terms of Service using known PPFStudio facts and clearly marked business-detail fields.
+- [x] Create bilingual Contact page with WhatsApp and social links, without inventing an address or email.
+- [x] Register routes, add footer/navigation links, add accessibility and responsive styles, and validate with tests/build.
+- [x] Sync the pages to GitHub only; do not publish to Manus hosting.
