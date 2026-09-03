@@ -1,6 +1,7 @@
 export type Language = "en" | "ar";
 import { embeddedImages } from "./embeddedImageAssets";
 import { embeddedVideos } from "./embeddedVideoAssets";
+import { embeddedPricingImage } from "./embeddedPricingImage";
 
 export const BRAND_NAME = "PPFStudio";
 
@@ -41,15 +42,18 @@ const externalImages = {
 } as const;
 
 export const USE_EMBEDDED_IMAGES = true;
-export const images = USE_EMBEDDED_IMAGES
+type ImageMap = Record<keyof typeof externalImages | "pricingArabic", string>;
+
+export const images: ImageMap = USE_EMBEDDED_IMAGES
   ? {
       ...externalImages,
       ...embeddedImages,
       installation: embeddedImages.galleryCoupe,
       secondaryDetail: embeddedImages.detailSuv,
       secondaryStudio: embeddedImages.galleryCoupe,
+      pricingArabic: embeddedPricingImage,
     }
-  : externalImages;
+  : { ...externalImages, pricingArabic: "" };
 export const externalImageFallbacks = externalImages;
 
 export const translations = {
@@ -97,7 +101,7 @@ export const translations = {
     workTitle: "The finish is the proof.",
     workBody: "Explore a selection of recent protection projects, from full-body coverage to precise front-end work.",
     filters: ["All", "Full Body PPF", "Front PPF", "Luxury Cars", "SUV", "Before & After", "Installation"],
-    galleryLabels: ["Full Body PPF", "Luxury Cars", "SUV", "Installation", "Before & After", "Front PPF", "Protection Guide", "PPF Explained", "Paint Correction", "Premium Protection", "Protection Journey", "Scratch Cost"],
+    galleryLabels: ["Full Body PPF", "Luxury Cars", "SUV", "Installation", "Before & After", "Front PPF", "Protection Guide", "PPF Explained", "Paint Correction", "Premium Protection", "Protection Journey", "Scratch Cost", "Pricing Guide"],
     beforeEyebrow: "03 / THE DIFFERENCE",
     beforeTitle: "Before & after",
     beforeBody: "Drag across the finish to see how invisible protection keeps the original surface looking untouched.",
@@ -220,7 +224,7 @@ export const translations = {
     workTitle: "النتيجة هي الدليل.",
     workBody: "استكشف مجموعة من مشاريع حماية السيارات، من التغطية الكاملة إلى حماية الواجهة الأمامية بدقة.",
     filters: ["الكل", "PPF كامل", "الواجهة الأمامية", "سيارات فاخرة", "SUV", "قبل وبعد", "تركيب"],
-    galleryLabels: ["PPF كامل", "سيارات فاخرة", "SUV", "تركيب", "قبل وبعد", "الواجهة الأمامية", "دليل الحماية", "ما هو PPF؟", "تصحيح الطلاء", "حماية فاخرة", "رحلة الحماية", "تكلفة الخدش"],
+    galleryLabels: ["PPF كامل", "سيارات فاخرة", "SUV", "تركيب", "قبل وبعد", "الواجهة الأمامية", "دليل الحماية", "ما هو PPF؟", "تصحيح الطلاء", "حماية فاخرة", "رحلة الحماية", "تكلفة الخدش", "دليل الأسعار"],
     beforeEyebrow: "03 / الفرق الواضح",
     beforeTitle: "قبل وبعد",
     beforeBody: "اسحب عبر السطح لترى كيف تحافظ الحماية غير المرئية على مظهر الطلاء الأصلي.",
@@ -316,6 +320,7 @@ export const galleryItems = [
   { id: 10, category: "Full Body PPF", src: images.premiumProtectionEnglish, arSrc: images.premiumProtectionArabic, alt: "Premium car protected inside a transparent protective dome", arAlt: "سيارة فاخرة محمية داخل قبة حماية شفافة" },
   { id: 11, category: "Installation", src: images.beforeProtectionAfterEnglish, arSrc: images.beforeProtectionAfterArabic, alt: "Four-panel journey from pristine paint through road risks and professional PPF installation to a protected glossy finish", arAlt: "رحلة من أربع لوحات تبدأ بطلاء أصلي مروراً بمخاطر الطريق وتركيب PPF الاحترافي وتنتهي بلمعان محمي" },
   { id: 12, category: "Before & After", src: images.scratchCostEnglish, arSrc: images.scratchCostArabic, alt: "Infographic explaining the real repair cost of a scratch and how PPF safeguards a car investment", arAlt: "رسم توضيحي يشرح التكلفة الحقيقية لإصلاح الخدش وكيف يحمي PPF استثمار السيارة" },
+  { id: 13, category: "Installation", src: images.pricingArabic, arSrc: images.pricingArabic, alt: "Arabic PPFStudio pricing and protection packages", arAlt: "قائمة أسعار وباقات حماية PPFStudio باللغة العربية" },
 ] as const;
 
 export const videoItems = [

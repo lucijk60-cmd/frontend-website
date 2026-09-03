@@ -383,3 +383,17 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Create bilingual Contact page with WhatsApp and social links, without inventing an address or email.
 - [x] Register routes, add footer/navigation links, add accessibility and responsive styles, and validate with tests/build.
 - [x] Sync the pages to GitHub only; do not publish to Manus hosting.
+
+## Embedded Image Quality Improvement
+
+- [ ] Audit embedded image dimensions, formats, compression, and active CSS rendering.
+- [ ] Preserve the highest available source fidelity and avoid unnecessary recompression or upscaling artifacts.
+- [ ] Improve responsive image rendering, object positioning, decoding behavior, and sharpness-related CSS.
+- [ ] Add asset integrity/rendering tests, run TypeScript/build and responsive verification, then sync to GitHub only.
+
+## Remove Ads and Add Supplied Pricing Image
+
+- [x] Remove all AdSense ad components, ad slots, verification script, and ads.txt from the website code.
+- [x] Remove the scroll split/reveal animation between media and ad slots while preserving normal media display.
+- [x] Convert the supplied Arabic pricing image into a deterministic embedded data asset and assign it to the intended image section.
+- [x] Validate image integrity, routes, tests, TypeScript, build, and GitHub-only sync.
