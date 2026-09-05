@@ -397,7 +397,6 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Remove the scroll split/reveal animation between media and ad slots while preserving normal media display.
 - [x] Convert the supplied Arabic pricing image into a deterministic embedded data asset and assign it to the intended image section.
 - [x] Validate image integrity, routes, tests, TypeScript, build, and GitHub-only sync.
-||||||| base
 
 ## Saudi SEO Keyword Distribution
 
