@@ -8,6 +8,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Admin from "./pages/Admin";
 import { ContactPage, PrivacyPage, TermsPage } from "./pages/LegalPages";
+import { SeoLandingPage } from "@/pages/SeoPages";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -18,6 +19,16 @@ function Router() {
       <Route path="/privacy" component={PrivacyPage} />
       <Route path="/terms" component={TermsPage} />
       <Route path="/contact" component={ContactPage} />
+      <Route path="/services/ppf-riyadh"><SeoLandingPage slug="/services/ppf-riyadh" /></Route>
+      <Route path="/services/full-body-ppf"><SeoLandingPage slug="/services/full-body-ppf" /></Route>
+      <Route path="/services/auto-detailing-ppf"><SeoLandingPage slug="/services/auto-detailing-ppf" /></Route>
+      <Route path="/ar/services/ppf-riyadh"><SeoLandingPage slug="/ar/services/ppf-riyadh" /></Route>
+      <Route path="/ar/services/full-body-ppf"><SeoLandingPage slug="/ar/services/full-body-ppf" /></Route>
+      <Route path="/blog/ppf-riyadh-guide"><SeoLandingPage slug="/blog/ppf-riyadh-guide" /></Route>
+      <Route path="/blog/ppf-price-saudi-arabia"><SeoLandingPage slug="/blog/ppf-price-saudi-arabia" /></Route>
+      <Route path="/blog/luxury-car-ppf"><SeoLandingPage slug="/blog/luxury-car-ppf" /></Route>
+      <Route path="/ar/blog/ppf-riyadh-guide"><SeoLandingPage slug="/ar/blog/ppf-riyadh-guide" /></Route>
+      <Route path="/ar/blog/ppf-price-saudi-arabia"><SeoLandingPage slug="/ar/blog/ppf-price-saudi-arabia" /></Route>
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
