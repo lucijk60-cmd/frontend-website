@@ -397,3 +397,21 @@ The review feature will use only visitor-submitted content. No fabricated, seede
 - [x] Remove the scroll split/reveal animation between media and ad slots while preserving normal media display.
 - [x] Convert the supplied Arabic pricing image into a deterministic embedded data asset and assign it to the intended image section.
 - [x] Validate image integrity, routes, tests, TypeScript, build, and GitHub-only sync.
+||||||| base
+
+## Saudi SEO Keyword Distribution
+
+- [ ] Audit current homepage, service content, Arabic sections, blog routes/content, metadata, sitemap and robots configuration.
+- [ ] Map the supplied English and Arabic keywords by search intent, city, service and destination page; avoid keyword stuffing.
+- [ ] Add natural English/Arabic SEO titles, descriptions, headings, service copy and internal links across the appropriate pages.
+- [ ] Create or update useful blog/SEO content and a Google Business Profile keyword/service posting plan without publishing to external accounts.
+- [ ] Add SEO regression tests, verify canonical/accessibility/build output, and sync website changes to GitHub only.
+
+## Saudi SEO Keyword Distribution
+
+- [x] Add premium responsive styling for English and Arabic SEO service/blog landing pages.
+- [x] Add natural bilingual homepage service-area copy and internal links to SEO landing pages.
+- [x] Add canonical, hreflang, Open Graph, JSON-LD, robots.txt, and sitemap coverage for the Saudi SEO structure.
+- [x] Create the Google Business Profile keyword/posting plan documentation without fabricated reviews or claims.
+- [x] Run SEO regression tests, type-check, production build, and responsive route verification.
+- [x] Sync the completed SEO changes to the connected GitHub repository.

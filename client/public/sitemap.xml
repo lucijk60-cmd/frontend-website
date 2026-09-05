@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://frontendweb-ewq8pgsm.manus.space/</loc>
-    <lastmod>2026-08-27</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>1.0</priority>
-  </url>
+  <url><loc>https://ppfstudio.online/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://ppfstudio.online/services/ppf-riyadh</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://ppfstudio.online/services/full-body-ppf</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://ppfstudio.online/services/auto-detailing-ppf</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://ppfstudio.online/ar/services/ppf-riyadh</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://ppfstudio.online/ar/services/full-body-ppf</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://ppfstudio.online/blog/ppf-riyadh-guide</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://ppfstudio.online/blog/ppf-price-saudi-arabia</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://ppfstudio.online/blog/luxury-car-ppf</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://ppfstudio.online/ar/blog/ppf-riyadh-guide</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://ppfstudio.online/ar/blog/ppf-price-saudi-arabia</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
 </urlset>

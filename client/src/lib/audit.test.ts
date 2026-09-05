@@ -32,7 +32,7 @@ describe("full website audit regressions", () => {
     const sitemap = fs.readFileSync(path.join(root, "client/public/sitemap.xml"), "utf8");
     for (const content of [html, robots, sitemap]) {
       expect(content).not.toContain("aurelis.manus.space");
-      expect(content).toContain("frontendweb-ewq8pgsm.manus.space");
+      expect(content).toContain("ppfstudio.online");
     }
   });
 });
