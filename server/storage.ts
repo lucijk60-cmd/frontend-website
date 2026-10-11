@@ -2,7 +2,16 @@
 // Uploads via Forge Server presigned URL to S3 (PUT direct).
 // Downloads return /manus-storage/{key} paths served via 307 redirect.
 
+import fs from "node:fs";
+import path from "node:path";
 import { ENV } from "./_core/env";
+
+const LOCAL_UPLOAD_DIR = path.resolve(import.meta.dirname, "..", "public", "assets", "uploads");
+export const memoryUploads = new Map<string, { data: Buffer; contentType: string }>();
+
+function hasForgeConfig() {
+  return Boolean(ENV.forgeApiUrl && ENV.forgeApiKey);
+}
 
 function getForgeConfig() {
   const forgeUrl = ENV.forgeApiUrl;
@@ -33,8 +42,22 @@ export async function storagePut(
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream",
 ): Promise<{ key: string; url: string }> {
-  const { forgeUrl, forgeKey } = getForgeConfig();
   const key = appendHashSuffix(normalizeKey(relKey));
+
+  if (!hasForgeConfig()) {
+    const buffer = typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
+    memoryUploads.set(key, { data: buffer, contentType });
+    try {
+      const targetPath = path.join(LOCAL_UPLOAD_DIR, key);
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+      fs.writeFileSync(targetPath, buffer);
+    } catch {
+      // In-memory store remains available if disk write fails
+    }
+    return { key, url: `/manus-storage/${key}` };
+  }
+
+  const { forgeUrl, forgeKey } = getForgeConfig();
 
   // 1. Get presigned PUT URL from Forge
   const presignUrl = new URL("v1/storage/presign/put", forgeUrl + "/");
@@ -77,8 +100,11 @@ export async function storageGet(relKey: string): Promise<{ key: string; url: st
 }
 
 export async function storageGetSignedUrl(relKey: string): Promise<string> {
-  const { forgeUrl, forgeKey } = getForgeConfig();
   const key = normalizeKey(relKey);
+  if (!hasForgeConfig()) {
+    return `/manus-storage/${key}`;
+  }
+  const { forgeUrl, forgeKey } = getForgeConfig();
 
   const getUrl = new URL("v1/storage/presign/get", forgeUrl + "/");
   getUrl.searchParams.set("path", key);

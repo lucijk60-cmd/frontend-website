@@ -1,4 +1,7 @@
+import fs from "node:fs";
+import path from "node:path";
 import type { Express } from "express";
+import { memoryUploads } from "../storage";
 import { ENV } from "./env";
 
 export function registerStorageProxy(app: Express) {
@@ -10,7 +13,24 @@ export function registerStorageProxy(app: Express) {
     }
 
     if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
-      res.status(500).send("Storage proxy not configured");
+      const memItem = memoryUploads.get(key);
+      if (memItem) {
+        res.set("Content-Type", memItem.contentType);
+        res.send(memItem.data);
+        return;
+      }
+      const uploadPath = path.resolve(import.meta.dirname, "../..", "public", "assets", "uploads", key);
+      if (fs.existsSync(uploadPath)) {
+        res.sendFile(uploadPath);
+        return;
+      }
+      const safeBaseName = path.basename(key);
+      const localImagePath = path.resolve(import.meta.dirname, "../..", "public", "assets", "images", safeBaseName);
+      if (fs.existsSync(localImagePath)) {
+        res.sendFile(localImagePath);
+        return;
+      }
+      res.status(404).send("Storage asset not found");
       return;
     }
 

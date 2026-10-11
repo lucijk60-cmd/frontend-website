@@ -452,6 +452,7 @@
 
   var originalFetch = window.fetch.bind(window);
 
+  try {
   window.fetch = function (input, init) {
     init = init || {};
     var startTime = Date.now();
@@ -589,6 +590,7 @@
         throw error;
       });
   };
+  } catch (e) {}
 
   // ==========================================================================
   // XHR Interception

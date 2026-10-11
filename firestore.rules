@@ -1,0 +1,184 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 1: Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerified() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == 'jabedjk112@gmail.com'
+      );
+    }
+
+    // Entity Validation Blueprints (Pillar 2)
+    function isValidAdminRole(data) {
+      return data.keys().hasAll(['uid', 'role', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'role', 'createdAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.role == 'admin' &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidReview(data) {
+      return data.keys().hasAll(['authorId', 'publicReference', 'name', 'rating', 'review', 'status', 'createdAt']) &&
+        data.keys().hasOnly(['authorId', 'publicReference', 'name', 'vehicle', 'rating', 'review', 'status', 'createdAt', 'updatedAt']) &&
+        data.authorId is string && data.authorId.size() >= 1 && data.authorId.size() <= 128 && data.authorId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.publicReference is string && data.publicReference.size() >= 6 && data.publicReference.size() <= 32 && data.publicReference.matches('^[A-Z0-9\\-]+$') &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
+        (!('vehicle' in data) || (data.vehicle is string && data.vehicle.size() >= 1 && data.vehicle.size() <= 120)) &&
+        data.rating is int && data.rating >= 1 && data.rating <= 5 &&
+        data.review is string && data.review.size() >= 20 && data.review.size() <= 1000 &&
+        data.status in ['pending', 'approved', 'rejected'] &&
+        data.createdAt is timestamp &&
+        (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    function isValidAdminMedia(data) {
+      return data.keys().hasAll(['ownerId', 'kind', 'language', 'title', 'storageKey', 'url', 'mimeType', 'sizeBytes', 'status', 'createdAt']) &&
+        data.keys().hasOnly(['ownerId', 'kind', 'language', 'title', 'storageKey', 'url', 'mimeType', 'sizeBytes', 'status', 'createdAt', 'updatedAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.kind in ['image', 'video'] &&
+        data.language in ['en', 'ar', 'shared'] &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 180 &&
+        data.storageKey is string && data.storageKey.size() >= 3 && data.storageKey.size() <= 256 &&
+        data.url is string && data.url.size() >= 3 && data.url.size() <= 512 &&
+        data.mimeType is string && data.mimeType.size() >= 3 && data.mimeType.size() <= 120 &&
+        data.sizeBytes is int && data.sizeBytes >= 1 && data.sizeBytes <= 52428800 &&
+        data.status in ['draft', 'published'] &&
+        data.createdAt is timestamp &&
+        (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    function isValidVisitorEvent(data) {
+      return data.keys().hasAll(['ownerId', 'visitorKeyHash', 'path', 'countryCode', 'deviceClass', 'createdAt']) &&
+        data.keys().hasOnly(['ownerId', 'visitorKeyHash', 'path', 'countryCode', 'deviceClass', 'createdAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.visitorKeyHash is string && data.visitorKeyHash.size() >= 16 && data.visitorKeyHash.size() <= 128 && data.visitorKeyHash.matches('^[a-f0-9]+$') &&
+        data.path is string && data.path.size() >= 1 && data.path.size() <= 160 &&
+        data.countryCode is string && data.countryCode.size() >= 2 && data.countryCode.size() <= 8 &&
+        data.deviceClass in ['desktop', 'mobile', 'tablet', 'unknown'] &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidCallSession(data) {
+      return data.keys().hasAll(['callerId', 'callId', 'businessId', 'status', 'createdAt']) &&
+        data.keys().hasOnly(['callerId', 'callId', 'businessId', 'status', 'createdAt', 'updatedAt']) &&
+        data.callerId is string && data.callerId.size() >= 1 && data.callerId.size() <= 128 && data.callerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.callId is string && data.callId.size() >= 8 && data.callId.size() <= 96 && data.callId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.businessId is string && data.businessId.size() >= 3 && data.businessId.size() <= 64 && data.businessId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.status in ['calling', 'ringing', 'connecting', 'connected', 'ended', 'rejected', 'busy', 'failed'] &&
+        data.createdAt is timestamp &&
+        (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    // Collection: /admins/{userId}
+    match /admins/{userId} {
+      allow get: if isVerified() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isAdmin() && isValidId(userId) && isValidAdminRole(incoming()) &&
+        incoming().uid == userId && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isAdmin() && isValidId(userId);
+    }
+
+    // Collection: /reviews/{reviewId}
+    match /reviews/{reviewId} {
+      allow get: if isValidId(reviewId) && (
+        existing().status == 'approved' ||
+        (isVerified() && existing().authorId == request.auth.uid) ||
+        isAdmin()
+      );
+      allow list: if existing().status == 'approved' ||
+        (isVerified() && existing().authorId == request.auth.uid) ||
+        isAdmin();
+      allow create: if isVerified() && isValidId(reviewId) && isValidReview(incoming()) &&
+        incoming().authorId == request.auth.uid &&
+        incoming().status == 'pending' &&
+        incoming().createdAt == request.time;
+      allow update: if isVerified() && isValidId(reviewId) && isValidReview(incoming()) &&
+        incoming().authorId == existing().authorId &&
+        incoming().publicReference == existing().publicReference &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+        );
+      allow delete: if isAdmin() && isValidId(reviewId);
+    }
+
+    // Collection: /adminMedia/{mediaId}
+    match /adminMedia/{mediaId} {
+      allow get: if isValidId(mediaId) && (existing().status == 'published' || isAdmin());
+      allow list: if existing().status == 'published' || isAdmin();
+      allow create: if isAdmin() && isValidId(mediaId) && isValidAdminMedia(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if isAdmin() && isValidId(mediaId) && isValidAdminMedia(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'storageKey', 'url', 'mimeType', 'sizeBytes', 'status', 'updatedAt']);
+      allow delete: if isAdmin() && isValidId(mediaId);
+    }
+
+    // Collection: /visitorEvents/{eventId}
+    match /visitorEvents/{eventId} {
+      allow get: if isAdmin() && isValidId(eventId);
+      allow list: if isAdmin();
+      allow create: if isVerified() && isValidId(eventId) && isValidVisitorEvent(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isAdmin() && isValidId(eventId);
+    }
+
+    // Collection: /callSessions/{callId}
+    match /callSessions/{callId} {
+      allow get: if isVerified() && isValidId(callId) && (existing().callerId == request.auth.uid || isAdmin());
+      allow list: if isVerified() && (existing().callerId == request.auth.uid || isAdmin());
+      allow create: if isVerified() && isValidId(callId) && isValidCallSession(incoming()) &&
+        incoming().callerId == request.auth.uid &&
+        incoming().callId == callId &&
+        incoming().status == 'calling' &&
+        incoming().createdAt == request.time;
+      allow update: if isVerified() && isValidId(callId) && isValidCallSession(incoming()) &&
+        incoming().callerId == existing().callerId &&
+        incoming().callId == existing().callId &&
+        incoming().businessId == existing().businessId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() || (
+            existing().callerId == request.auth.uid &&
+            !(existing().status in ['ended', 'rejected', 'failed', 'busy']) &&
+            incoming().status == 'ended' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+        );
+      allow delete: if isAdmin() && isValidId(callId);
+    }
+  }
+}

@@ -1,0 +1,280 @@
+{
+  "entities": {
+    "AdminRole": {
+      "title": "AdminRole",
+      "description": "Represents an authorized administrator account.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the administrator.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "role": {
+          "type": "string",
+          "description": "Role identifier.",
+          "enum": ["admin"],
+          "minLength": 5,
+          "maxLength": 16
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation."
+        }
+      },
+      "required": ["uid", "role", "createdAt"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Customer paint protection film review.",
+      "type": "object",
+      "properties": {
+        "authorId": {
+          "type": "string",
+          "description": "UID of the submitting user.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "publicReference": {
+          "type": "string",
+          "description": "Public tracking reference code.",
+          "minLength": 6,
+          "maxLength": 32,
+          "pattern": "^[A-Z0-9\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the reviewer.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "vehicle": {
+          "type": "string",
+          "description": "Vehicle model protected.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "rating": {
+          "type": "integer",
+          "description": "Star rating from 1 to 5."
+        },
+        "review": {
+          "type": "string",
+          "description": "Review text content.",
+          "minLength": 20,
+          "maxLength": 1000
+        },
+        "status": {
+          "type": "string",
+          "description": "Moderation status of the review.",
+          "enum": ["pending", "approved", "rejected"],
+          "minLength": 7,
+          "maxLength": 16
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last moderation update timestamp."
+        }
+      },
+      "required": ["authorId", "publicReference", "name", "rating", "review", "status", "createdAt"]
+    },
+    "AdminMedia": {
+      "title": "AdminMedia",
+      "description": "Bilingual gallery image or video uploaded by an administrator.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Administrator UID who uploaded the media.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "kind": {
+          "type": "string",
+          "description": "Media asset type.",
+          "enum": ["image", "video"],
+          "minLength": 5,
+          "maxLength": 10
+        },
+        "language": {
+          "type": "string",
+          "description": "Target language for the asset.",
+          "enum": ["en", "ar", "shared"],
+          "minLength": 2,
+          "maxLength": 10
+        },
+        "title": {
+          "type": "string",
+          "description": "Display title of the media item.",
+          "minLength": 2,
+          "maxLength": 180
+        },
+        "storageKey": {
+          "type": "string",
+          "description": "Storage key path.",
+          "minLength": 3,
+          "maxLength": 256
+        },
+        "url": {
+          "type": "string",
+          "description": "Publicly accessible media URL.",
+          "minLength": 3,
+          "maxLength": 512
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type of the file.",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "description": "Size of the media asset in bytes."
+        },
+        "status": {
+          "type": "string",
+          "description": "Publication status.",
+          "enum": ["draft", "published"],
+          "minLength": 5,
+          "maxLength": 16
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp."
+        }
+      },
+      "required": ["ownerId", "kind", "language", "title", "storageKey", "url", "mimeType", "sizeBytes", "status", "createdAt"]
+    },
+    "VisitorEvent": {
+      "title": "VisitorEvent",
+      "description": "Anonymized visitor pageview analytics event.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the recording user or session.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "visitorKeyHash": {
+          "type": "string",
+          "description": "SHA-256 hash of visitor key.",
+          "minLength": 16,
+          "maxLength": 128,
+          "pattern": "^[a-f0-9]+$"
+        },
+        "path": {
+          "type": "string",
+          "description": "Visited route path.",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "countryCode": {
+          "type": "string",
+          "description": "Two-to-eight character country code.",
+          "minLength": 2,
+          "maxLength": 8
+        },
+        "deviceClass": {
+          "type": "string",
+          "description": "Device classification.",
+          "enum": ["desktop", "mobile", "tablet", "unknown"],
+          "minLength": 6,
+          "maxLength": 16
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp."
+        }
+      },
+      "required": ["ownerId", "visitorKeyHash", "path", "countryCode", "deviceClass", "createdAt"]
+    },
+    "CallSession": {
+      "title": "CallSession",
+      "description": "WebRTC signaling call session metadata.",
+      "type": "object",
+      "properties": {
+        "callerId": {
+          "type": "string",
+          "description": "UID of the caller.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "callId": {
+          "type": "string",
+          "description": "Unique call session ID.",
+          "minLength": 8,
+          "maxLength": 96,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "businessId": {
+          "type": "string",
+          "description": "Target business identifier.",
+          "minLength": 3,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "status": {
+          "type": "string",
+          "description": "Call lifecycle state.",
+          "enum": ["calling", "ringing", "connecting", "connected", "ended", "rejected", "busy", "failed"],
+          "minLength": 4,
+          "maxLength": 16
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last signal update timestamp."
+        }
+      },
+      "required": ["callerId", "callId", "businessId", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/admins/{userId}": {
+      "schema": { "$ref": "#/entities/AdminRole" },
+      "description": "Stores verified administrator UIDs for role-based access control."
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Stores customer reviews and their moderation status."
+    },
+    "/adminMedia/{mediaId}": {
+      "schema": { "$ref": "#/entities/AdminMedia" },
+      "description": "Stores bilingual gallery media assets managed by administrators."
+    },
+    "/visitorEvents/{eventId}": {
+      "schema": { "$ref": "#/entities/VisitorEvent" },
+      "description": "Stores anonymized visitor analytics events."
+    },
+    "/callSessions/{callId}": {
+      "schema": { "$ref": "#/entities/CallSession" },
+      "description": "Stores WebRTC call session lifecycle records."
+    }
+  }
+}
