@@ -828,3 +828,50 @@ body:not(.no-reveal) .reveal { animation: reveal-in 650ms var(--ease-out) forwar
 .site-shell--rtl .home-seo-links { text-align: right; }
 .site-shell--rtl .home-seo-link-grid a { letter-spacing: 0; text-transform: none; }
 @media (max-width: 720px) { .home-seo-link-grid { grid-template-columns: 1fr; } }
+
+/* 6-Language Switcher & Multilingual Typography */
+body { font-family: "Manrope", "Cairo", "Noto Sans Bengali", "Noto Sans Devanagari", sans-serif; }
+[lang="bn"] .site-shell, [lang="bn"] body { font-family: "Noto Sans Bengali", "Manrope", sans-serif; }
+[lang="hi"] .site-shell, [lang="hi"] body { font-family: "Noto Sans Devanagari", "Manrope", sans-serif; }
+[lang="ur"] .site-shell, [lang="ur"] body { font-family: "Cairo", "Manrope", sans-serif; }
+[lang="bn"] .hero-copy h1, [lang="bn"] .section-heading h2, [lang="bn"] .manifesto-copy h2, [lang="bn"] .closing-content h2,
+[lang="hi"] .hero-copy h1, [lang="hi"] .section-heading h2, [lang="hi"] .manifesto-copy h2, [lang="hi"] .closing-content h2,
+[lang="ur"] .hero-copy h1, [lang="ur"] .section-heading h2, [lang="ur"] .manifesto-copy h2, [lang="ur"] .closing-content h2 {
+  letter-spacing: 0;
+  line-height: 1.16;
+}
+
+.language-switcher { flex-wrap: wrap; gap: 5px; }
+.language-switcher button { padding: 3px 5px; border: 1px solid transparent; font-weight: 600; }
+.language-switcher button.active { border-color: rgba(200,165,107,.45); background: rgba(200,165,107,.12); color: var(--gold-light); }
+
+.mobile-language-row { flex-wrap: wrap; gap: 8px; }
+.mobile-language-row button { padding: 7px 11px; border: 1px solid rgba(244,242,237,.16); background: rgba(244,242,237,.03); font-size: 11px; transition: border-color 180ms ease, background 180ms ease, color 180ms ease; }
+.mobile-language-row button.active { border-color: var(--gold); background: rgba(200,165,107,.15); color: var(--gold-light); }
+
+.language-dialog { max-width: 720px !important; }
+.language-cards--multi { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.language-cards--multi .language-card { min-height: 132px; padding: 16px; }
+.language-cards--multi .language-card strong { font-size: 22px; margin-top: 18px; }
+.language-card.is-active { border-color: var(--gold); background: rgba(200,165,107,.14); box-shadow: inset 0 0 0 1px rgba(200,165,107,.35); }
+
+.footer-language-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.footer-language-pill { padding: 5px 10px !important; border: 1px solid rgba(244,242,237,.15) !important; background: rgba(244,242,237,.03) !important; color: var(--soft) !important; font-size: 10px !important; letter-spacing: .04em; transition: border-color 180ms ease, background 180ms ease, color 180ms ease; }
+.footer-language-pill:hover, .footer-language-pill.active { border-color: var(--gold) !important; background: rgba(200,165,107,.15) !important; color: var(--gold-light) !important; }
+
+.legal-language-bar, .seo-language-bar { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.legal-language-bar .legal-language-toggle { padding: .42rem .62rem; font-size: .7rem; border-color: rgba(215,195,156,.25); color: rgba(244,239,230,.72); transition: border-color 180ms ease, background 180ms ease, color 180ms ease; }
+.legal-language-bar .legal-language-toggle.active, .legal-language-bar .legal-language-toggle:hover { border-color: #d7c39c; background: rgba(215,195,156,.16); color: #f7f1e7; }
+
+.seo-language-pill { padding: 5px 9px; border: 1px solid rgba(217,185,121,.28); background: rgba(255,255,255,.03); color: #b6b3aa; cursor: pointer; font-size: 10px; letter-spacing: .04em; transition: border-color 180ms ease, background 180ms ease, color 180ms ease; }
+.seo-language-pill:hover, .seo-language-pill.active { border-color: #d9b979; background: rgba(217,185,121,.16); color: #f0d399; }
+
+@media (max-width: 680px) {
+  .language-cards--multi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .language-cards--multi .language-card { min-height: 112px; padding: 14px; }
+  .language-cards--multi .language-card strong { font-size: 19px; }
+}
+@media (max-width: 420px) {
+  .language-cards--multi { grid-template-columns: 1fr; }
+}
+

@@ -2,6 +2,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { skipToken } from "@tanstack/react-query";
+import { Link, useLocation } from "wouter";
 import {
   ArrowDown,
   ArrowUpRight,
@@ -13,6 +14,7 @@ import {
   CirclePlay,
   Droplets,
   Ghost,
+  Globe,
   Instagram,
   Menu,
   LockKeyhole,
@@ -41,6 +43,8 @@ import {
   galleryItems,
   images,
   INSTAGRAM_URL,
+  isValidLanguage,
+  LANGUAGE_OPTIONS,
   SNAPCHAT_URL,
   TIKTOK_URL,
   translations,
@@ -64,7 +68,7 @@ function getStoredReviewReference(): string {
 function getStoredLanguage(): Language | null {
   if (typeof window === "undefined") return null;
   const saved = window.localStorage.getItem(STORAGE_KEY);
-  return saved === "ar" || saved === "en" ? saved : null;
+  return isValidLanguage(saved) ? saved : null;
 }
 
 function BrandMark({ compact = false }: { compact?: boolean }) {
@@ -148,9 +152,11 @@ export default function Home() {
   const [trackingReference, setTrackingReference] = useState(getStoredReviewReference);
   const [trackingInput, setTrackingInput] = useState(getStoredReviewReference);
   const [referenceCopied, setReferenceCopied] = useState(false);
+  const [, setLocation] = useLocation();
   const statsRef = useRef<HTMLElement | null>(null);
   const c: Content = translations[language];
-  const isArabic = language === "ar";
+  const isArabic = c.dir === "rtl";
+  const mediaLanguage = language === "ar" ? "ar" : "en";
   const { user } = useAuth();
   const trpcUtils = trpc.useUtils();
   const reviewsQuery = trpc.reviews.list.useQuery({ limit: 24, offset: 0 });
@@ -247,17 +253,17 @@ export default function Home() {
   };
 
   const localizedGalleryItems = useMemo(() => {
-    const staticItems = galleryItems.map((item) => isArabic && "arSrc" in item ? { ...item, src: item.arSrc, alt: item.arAlt } : item);
-    const uploadedItems = selectPublishedMedia(publishedMediaQuery.data ?? [], language, "image")
+    const staticItems = galleryItems.map((item) => language === "ar" && "arSrc" in item ? { ...item, src: item.arSrc, alt: item.arAlt } : item);
+    const uploadedItems = selectPublishedMedia(publishedMediaQuery.data ?? [], mediaLanguage, "image")
       .map((item) => ({ id: 10000 + item.id, category: "Admin Uploads", src: item.url, alt: item.title }));
     return [...staticItems, ...uploadedItems];
-  }, [isArabic, language, publishedMediaQuery.data]);
+  }, [language, mediaLanguage, publishedMediaQuery.data]);
   const videoDisplayItems = useMemo(() => {
     const staticVideos = videoItems.map(item => ({ ...item, poster: item.src, src: "videoSrc" in item && item.videoSrc ? item.videoSrc : item.src, isUploaded: "isEmbedded" in item ? item.isEmbedded : false }));
-    const uploadedVideos = selectPublishedMedia(publishedMediaQuery.data ?? [], language, "video")
+    const uploadedVideos = selectPublishedMedia(publishedMediaQuery.data ?? [], mediaLanguage, "video")
       .map((item) => ({ title: item.title, src: item.url, poster: images.galleryCoupe, isUploaded: true }));
     return [...staticVideos, ...uploadedVideos];
-  }, [language, publishedMediaQuery.data]);
+  }, [mediaLanguage, publishedMediaQuery.data]);
   const filteredGallery = useMemo(() => {
     if (activeFilter === 0) return localizedGalleryItems;
     return localizedGalleryItems.filter((item) => item.category === galleryFilterKeys[activeFilter]);
@@ -310,9 +316,27 @@ export default function Home() {
           </nav>
           <div className="nav-actions">
             <div className="language-switcher" aria-label="Language switcher">
-              <button className={language === "ar" ? "active" : ""} onClick={() => selectLanguage("ar")}>العربية</button>
-              <span>/</span>
-              <button className={language === "en" ? "active" : ""} onClick={() => selectLanguage("en")}>English</button>
+              {LANGUAGE_OPTIONS.map((opt, idx) => (
+                <Fragment key={opt.code}>
+                  {idx > 0 && <span>/</span>}
+                  <button
+                    className={language === opt.code ? "active" : ""}
+                    onClick={() => selectLanguage(opt.code)}
+                    title={opt.label}
+                  >
+                    {opt.label}
+                  </button>
+                </Fragment>
+              ))}
+              <button
+                type="button"
+                className="language-modal-trigger"
+                onClick={openLanguageModal}
+                aria-label="Choose language"
+                title="Languages"
+              >
+                <Globe size={13} />
+              </button>
             </div>
             <WhatsAppLink language={language} compact>{c.navCta}</WhatsAppLink>
             <button className="menu-button" onClick={() => setMobileMenuOpen(true)} aria-label={c.menu}>
@@ -333,12 +357,19 @@ export default function Home() {
             {c.nav.map(([label, id]) => (
               <button key={id} onClick={() => scrollToSection(id)}>{label}<ArrowUpRight size={17} /></button>
             ))}
-            <button className="mobile-admin-link" onClick={() => { setMobileMenuOpen(false); window.location.href = "/admin"; }}><span><LockKeyhole size={16} />{isArabic ? "الإدارة" : "Admin"}</span><ArrowUpRight size={17} /></button>
+            <button className="mobile-admin-link" onClick={() => { setMobileMenuOpen(false); setLocation("/admin"); }}><span><LockKeyhole size={16} />{language === "ar" ? "الإدارة" : "Admin"}</span><ArrowUpRight size={17} /></button>
           </div>
           <div className="mobile-sheet-footer">
-            <div className="mobile-language-row">
-              <button className={language === "ar" ? "active" : ""} onClick={() => selectLanguage("ar")}>العربية</button>
-              <button className={language === "en" ? "active" : ""} onClick={() => selectLanguage("en")}>English</button>
+            <div className="mobile-language-row" aria-label="Select language">
+              {LANGUAGE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.code}
+                  className={language === opt.code ? "active" : ""}
+                  onClick={() => selectLanguage(opt.code)}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
             <WhatsAppLink language={language}>{c.navCta}</WhatsAppLink>
           </div>
@@ -482,10 +513,10 @@ export default function Home() {
           <div className="closing-content page-width"><Reveal><div className="eyebrow eyebrow--light"><span className="eyebrow-rule" />{c.contactEyebrow}</div><h2>{c.contactTitle}</h2><p>{c.contactBody}</p><WhatsAppLink language={language} className="button button--gold">{c.ctaButton}</WhatsAppLink></Reveal><div className="closing-contact"><span>{c.contactLabel}</span><a href={whatsappHref(language)} target="_blank" rel="noreferrer">{WHATSAPP_DISPLAY}</a></div></div>
         </section>
 
-        <section className="home-seo-links page-width" aria-labelledby="home-seo-heading"><div className="eyebrow"><span className="eyebrow-rule" />{language === "ar" ? "خدمات حماية السيارات في السعودية" : "Saudi paint protection services"}</div><h2 id="home-seo-heading">{language === "ar" ? "حماية طلاء السيارات بالرياض وخارجها" : "Paint protection film in Riyadh and Saudi Arabia"}</h2><p>{language === "ar" ? "نقدم تركيب PPF وحماية كاملة للسيارات والعناية بالتفاصيل للسيارات الفاخرة وSUV في الرياض، مع خدمة عملاء ثنائية اللغة." : "Explore premium PPF installation, full-body vehicle protection and automotive detailing for luxury cars and SUVs in Riyadh, with bilingual support."}</p><div className="home-seo-link-grid"><a href={language === "ar" ? "/ar/services/ppf-riyadh" : "/services/ppf-riyadh"}>{language === "ar" ? "تركيب PPF بالرياض" : "PPF Riyadh"}</a><a href={language === "ar" ? "/ar/services/full-body-ppf" : "/services/full-body-ppf"}>{language === "ar" ? "حماية السيارة بالكامل" : "Full-body PPF"}</a><a href="/services/auto-detailing-ppf">{language === "ar" ? "العناية بالسيارات وحماية الطلاء" : "Auto Detailing & PPF"}</a><a href={language === "ar" ? "/ar/blog/ppf-riyadh-guide" : "/blog/ppf-riyadh-guide"}>{language === "ar" ? "دليل حماية السيارات بالرياض" : "Riyadh PPF Guide"}</a><a href={language === "ar" ? "/ar/blog/ppf-price-saudi-arabia" : "/blog/ppf-price-saudi-arabia"}>{language === "ar" ? "أسعار PPF في السعودية" : "PPF price guide Saudi Arabia"}</a><a href="/blog/luxury-car-ppf">{language === "ar" ? "حماية السيارات الفاخرة" : "Luxury Car PPF Guide"}</a></div></section>
+        <section className="home-seo-links page-width" aria-labelledby="home-seo-heading"><div className="eyebrow"><span className="eyebrow-rule" />{language === "ar" ? "خدمات حماية السيارات في السعودية" : "Saudi paint protection services"}</div><h2 id="home-seo-heading">{language === "ar" ? "حماية طلاء السيارات بالرياض وخارجها" : "Paint protection film in Riyadh and Saudi Arabia"}</h2><p>{language === "ar" ? "نقدم تركيب PPF وحماية كاملة للسيارات والعناية بالتفاصيل للسيارات الفاخرة وSUV في الرياض، مع خدمة عملاء متعددة اللغات." : "Explore premium PPF installation, full-body vehicle protection and automotive detailing for luxury cars and SUVs in Riyadh, with multilingual support."}</p><div className="home-seo-link-grid"><Link href={language === "ar" ? "/ar/services/ppf-riyadh" : "/services/ppf-riyadh"}>{language === "ar" ? "تركيب PPF بالرياض" : "PPF Riyadh"}</Link><Link href={language === "ar" ? "/ar/services/full-body-ppf" : "/services/full-body-ppf"}>{language === "ar" ? "حماية السيارة بالكامل" : "Full-body PPF"}</Link><Link href="/services/auto-detailing-ppf">{language === "ar" ? "العناية بالسيارات وحماية الطلاء" : "Auto Detailing & PPF"}</Link><Link href={language === "ar" ? "/ar/blog/ppf-riyadh-guide" : "/blog/ppf-riyadh-guide"}>{language === "ar" ? "دليل حماية السيارات بالرياض" : "Riyadh PPF Guide"}</Link><Link href={language === "ar" ? "/ar/blog/ppf-price-saudi-arabia" : "/blog/ppf-price-saudi-arabia"}>{language === "ar" ? "أسعار PPF في السعودية" : "PPF price guide Saudi Arabia"}</Link><Link href="/blog/luxury-car-ppf">{language === "ar" ? "حماية السيارات الفاخرة" : "Luxury Car PPF Guide"}</Link></div></section>
       </main>
 
-      <footer className="site-footer"><div className="page-width footer-grid"><div><BrandMark /><p>{c.footerDescription}</p></div><div className="footer-column"><span className="footer-label">{c.footerLinks}</span>{c.nav.slice(0, 5).map(([label, id]) => <button key={id} onClick={() => scrollToSection(id)}>{label}</button>)}<a className="footer-legal-link" href="/privacy">{language === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}</a><a className="footer-legal-link" href="/terms">{language === "ar" ? "الشروط والأحكام" : "Terms of Service"}</a><a className="footer-legal-link" href="/contact">{language === "ar" ? "التواصل" : "Contact"}</a></div><div className="footer-column"><span className="footer-label">{c.footerContact}</span><WhatsAppLink language={language}>{WHATSAPP_DISPLAY}</WhatsAppLink><div className="social-links" aria-label="PPFStudio social profiles"><a className="social-link" href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on Instagram"><Instagram size={16} /> <span>Instagram</span></a><a className="social-link" href={SNAPCHAT_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on Snapchat"><Ghost size={16} /> <span>Snapchat</span></a><a className="social-link" href={TIKTOK_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on TikTok"><Music2 size={16} /> <span>TikTok</span></a><a className="social-link social-link--admin" href="/admin" aria-label="Open PPFStudio Admin panel"><ShieldCheck size={16} /> <span>Admin</span></a></div></div></div><div className="page-width footer-bottom"><span>{c.footerCopyright}</span><button onClick={openLanguageModal}>{language === "ar" ? "English" : "العربية"}</button></div></footer>
+      <footer className="site-footer"><div className="page-width footer-grid"><div><BrandMark /><p>{c.footerDescription}</p></div><div className="footer-column"><span className="footer-label">{c.footerLinks}</span>{c.nav.slice(0, 5).map(([label, id]) => <button key={id} onClick={() => scrollToSection(id)}>{label}</button>)}<Link className="footer-legal-link" href="/privacy">{language === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}</Link><Link className="footer-legal-link" href="/terms">{language === "ar" ? "الشروط والأحكام" : "Terms of Service"}</Link><Link className="footer-legal-link" href="/contact">{language === "ar" ? "التواصل" : "Contact"}</Link></div><div className="footer-column"><span className="footer-label">{c.footerContact}</span><WhatsAppLink language={language}>{WHATSAPP_DISPLAY}</WhatsAppLink><div className="social-links" aria-label="PPFStudio social profiles"><a className="social-link" href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on Instagram"><Instagram size={16} /> <span>Instagram</span></a><a className="social-link" href={SNAPCHAT_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on Snapchat"><Ghost size={16} /> <span>Snapchat</span></a><a className="social-link" href={TIKTOK_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on TikTok"><Music2 size={16} /> <span>TikTok</span></a><Link className="social-link social-link--admin" href="/admin" aria-label="Open PPFStudio Admin panel"><ShieldCheck size={16} /> <span>Admin</span></Link></div></div></div><div className="page-width footer-bottom"><span>{c.footerCopyright}</span><div className="footer-language-list">{LANGUAGE_OPTIONS.map((opt) => <button key={opt.code} className={language === opt.code ? "active" : ""} onClick={() => selectLanguage(opt.code)}>{opt.label}</button>)}<button onClick={openLanguageModal} className="footer-language-more"><Globe size={12} /> Languages</button></div></div></footer>
 
       <a href={whatsappHref(language)} target="_blank" rel="noreferrer" className="floating-whatsapp" aria-label={language === "ar" ? "التواصل معنا عبر واتساب" : "Chat with us on WhatsApp"}><MessageCircle size={23} /><span>{c.floatingWhatsapp}</span></a>
 
@@ -498,15 +529,33 @@ export default function Home() {
       </Dialog>
 
       <Dialog open={reviewsOpen} onOpenChange={setReviewsOpen}>
-        <DialogContent className="reviews-dialog"><DialogTitle>{c.reviewOpen}</DialogTitle><DialogDescription>{c.reviewModeratedNote}</DialogDescription><div className="review-list">{(reviewsQuery.data?.items ?? []).map((review) => <article className="review-list-item" key={review.id}><div className="testimonial-top"><div className="stars">{[0, 1, 2, 3, 4].map((star) => <Star key={star} size={13} fill={star < review.rating ? "currentColor" : "none"} />)}</div><time dateTime={new Date(review.createdAt).toISOString()}>{new Date(review.createdAt).toLocaleDateString(language === "ar" ? "ar-SA" : "en-US")}</time></div><p>“{getLocalizedReviewText(review, language)}”</p><div className="testimonial-person"><span className="testimonial-avatar">{review.name.charAt(0).toUpperCase()}</span><span><strong>{review.name}</strong><small>{review.vehicle || (isArabic ? "عميل" : "Client")}</small></span></div></article>)}{(reviewsQuery.data?.items.length ?? 0) === 0 && <div className="review-empty-state">{c.reviewEmpty}</div>}</div></DialogContent>
+        <DialogContent className="reviews-dialog"><DialogTitle>{c.reviewOpen}</DialogTitle><DialogDescription>{c.reviewModeratedNote}</DialogDescription><div className="review-list">{(reviewsQuery.data?.items ?? []).map((review) => <article className="review-list-item" key={review.id}><div className="testimonial-top"><div className="stars">{[0, 1, 2, 3, 4].map((star) => <Star key={star} size={13} fill={star < review.rating ? "currentColor" : "none"} />)}</div><time dateTime={new Date(review.createdAt).toISOString()}>{new Date(review.createdAt).toLocaleDateString(c.locale)}</time></div><p>“{getLocalizedReviewText(review, language)}”</p><div className="testimonial-person"><span className="testimonial-avatar">{review.name.charAt(0).toUpperCase()}</span><span><strong>{review.name}</strong><small>{review.vehicle || (isArabic ? "عميل" : "Client")}</small></span></div></article>)}{(reviewsQuery.data?.items.length ?? 0) === 0 && <div className="review-empty-state">{c.reviewEmpty}</div>}</div></DialogContent>
       </Dialog>
 
       <Dialog open={reviewFormOpen} onOpenChange={setReviewFormOpen}>
         <DialogContent className="review-form-dialog"><DialogTitle>{c.reviewFormTitle}</DialogTitle><DialogDescription>{c.reviewModeratedNote}</DialogDescription><form className="review-form" onSubmit={(event) => { event.preventDefault(); submitReview.mutate({ name: reviewName, vehicle: reviewVehicle || undefined, rating: reviewRating, review: reviewText }); }}><label><span>{c.reviewFormName}</span><input value={reviewName} onChange={(event) => setReviewName(event.target.value)} minLength={2} maxLength={120} required /></label><label><span>{c.reviewFormVehicle}</span><input value={reviewVehicle} onChange={(event) => setReviewVehicle(event.target.value)} maxLength={120} /></label><fieldset><legend>{c.reviewFormRating}</legend><div className="rating-picker">{[1, 2, 3, 4, 5].map((rating) => <button key={rating} type="button" className={rating <= reviewRating ? "active" : ""} onClick={() => setReviewRating(rating)} aria-label={`${rating} / 5`}><Star size={18} fill={rating <= reviewRating ? "currentColor" : "none"} /></button>)}</div></fieldset><label><span>{c.reviewFormText}</span><textarea value={reviewText} onChange={(event) => setReviewText(event.target.value)} minLength={20} maxLength={1000} rows={5} required /></label><button className="button button--gold" type="submit" disabled={submitReview.isPending}>{submitReview.isPending ? (isArabic ? "جارٍ الإرسال..." : "Submitting...") : c.reviewFormSubmit}</button></form></DialogContent>
       </Dialog>
 
-      <Dialog open={!isLoading && showLanguageModal} onOpenChange={() => undefined}>
-        <DialogContent className="language-dialog" showCloseButton={false}><DialogTitle>{c.modalTitle}</DialogTitle><DialogDescription>{c.modalBody}</DialogDescription><div className="language-cards"><button onClick={() => selectLanguage("ar")} className="language-card language-card--ar"><span className="language-code">AR</span><strong>{c.modalArabic}</strong><small>{c.modalArabicHint}</small><ArrowUpRight size={19} /></button><button onClick={() => selectLanguage("en")} className="language-card"><span className="language-code">EN</span><strong>{c.modalEnglish}</strong><small>{c.modalEnglishHint}</small><ArrowUpRight size={19} /></button></div><div className="language-modal-foot"><InlineBrandMark alt="PPF Paint Protection Film logo" /> <span>PPFSTUDIO / 2026</span></div></DialogContent>
+      <Dialog open={!isLoading && showLanguageModal} onOpenChange={(open) => setShowLanguageModal(open)}>
+        <DialogContent className="language-dialog" showCloseButton={false}>
+          <DialogTitle>{c.modalTitle}</DialogTitle>
+          <DialogDescription>{c.modalBody}</DialogDescription>
+          <div className="language-cards language-cards--multi">
+            {LANGUAGE_OPTIONS.map((opt) => (
+              <button
+                key={opt.code}
+                onClick={() => selectLanguage(opt.code)}
+                className={`language-card ${opt.dir === "rtl" ? "language-card--ar" : ""} ${language === opt.code ? "language-card--active" : ""}`}
+              >
+                <span className="language-code">{opt.short}</span>
+                <strong>{opt.label}</strong>
+                <small>{opt.nativeHint}</small>
+                <ArrowUpRight size={19} />
+              </button>
+            ))}
+          </div>
+          <div className="language-modal-foot"><InlineBrandMark alt="PPF Paint Protection Film logo" /> <span>PPFSTUDIO / 2026 · 6 LANGUAGES</span></div>
+        </DialogContent>
       </Dialog>
     </div>
   );

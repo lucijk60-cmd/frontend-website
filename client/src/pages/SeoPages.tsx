@@ -148,6 +148,26 @@ const pages: Record<string, SeoPage> = {
   },
 };
 
+const SLUG_ALIASES: Record<string, string> = {
+  "/service": "/services/ppf-riyadh",
+  "/services": "/services/ppf-riyadh",
+  "/services/paint-protection-film-riyadh": "/services/ppf-riyadh",
+  "/services/ceramic-coating-riyadh": "/services/auto-detailing-ppf",
+  "/ar/services/auto-detailing-ppf": "/ar/services/ppf-riyadh",
+  "/blog": "/blog/ppf-riyadh-guide",
+  "/ar/blog/luxury-car-ppf": "/ar/blog/ppf-riyadh-guide",
+};
+
+function resolveSeoPage(slug: string): SeoPage {
+  const normalized = slug.replace(/\/+$/, "") || "/services/ppf-riyadh";
+  const resolvedKey = SLUG_ALIASES[normalized] ?? normalized;
+  if (pages[resolvedKey]) return pages[resolvedKey];
+  if (normalized.startsWith("/ar/blog")) return pages["/ar/blog/ppf-riyadh-guide"];
+  if (normalized.startsWith("/ar/")) return pages["/ar/services/ppf-riyadh"];
+  if (normalized.startsWith("/blog")) return pages["/blog/ppf-riyadh-guide"];
+  return pages["/services/ppf-riyadh"];
+}
+
 function updateMeta(page: SeoPage) {
   document.documentElement.lang = page.language === "ar" ? "ar" : "en";
   document.documentElement.dir = page.language === "ar" ? "rtl" : "ltr";
@@ -158,21 +178,62 @@ function updateMeta(page: SeoPage) {
   canonical?.setAttribute("href", `https://ppfstudio.online${window.location.pathname}`);
 }
 
-export function SeoLandingPage({ slug }: { slug: string }) {
-  const page = pages[slug] ?? pages["/services/ppf-riyadh"];
-  useEffect(() => updateMeta(page), [page]);
+export function SeoLandingPage({ slug }: { slug?: string }) {
+  const [location, setLocation] = useLocation();
+  const activeSlug = slug || location || "/services/ppf-riyadh";
+  const page = resolveSeoPage(activeSlug);
+  useEffect(() => {
+    updateMeta(page);
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+  }, [page, activeSlug]);
   const isArabic = page.language === "ar";
-  const homeHref = isArabic ? "/" : "/";
+  const homeHref = "/";
+
+  const switchLanguageOnSeoPage = (langCode: string) => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("aurelis-language", langCode);
+    }
+    if (langCode === "ar" && !activeSlug.startsWith("/ar/")) {
+      const target = pages[`/ar${activeSlug}`] ? `/ar${activeSlug}` : "/ar/services/ppf-riyadh";
+      setLocation(target);
+    } else if (langCode !== "ar" && activeSlug.startsWith("/ar/")) {
+      const stripped = activeSlug.replace(/^\/ar/, "");
+      const target = pages[stripped] ? stripped : "/services/ppf-riyadh";
+      setLocation(target);
+    } else {
+      setLocation("/");
+    }
+  };
 
   return (
     <main className={`seo-page ${isArabic ? "seo-page-ar" : ""}`} dir={isArabic ? "rtl" : "ltr"}>
       <header className="seo-page-header">
         <Link href={homeHref} className="seo-brand">{BRAND_NAME}<span>.online</span></Link>
         <nav className="seo-page-nav" aria-label={isArabic ? "التنقل" : "Page navigation"}>
+          <Link href="/">{isArabic ? "الرئيسية" : "Home"}</Link>
           <Link href={isArabic ? "/ar/services/ppf-riyadh" : "/services/ppf-riyadh"}>{isArabic ? "الخدمات" : "Services"}</Link>
           <Link href={isArabic ? "/ar/blog/ppf-riyadh-guide" : "/blog/ppf-riyadh-guide"}>{isArabic ? "المجلة" : "Journal"}</Link>
           <Link href="/contact">{isArabic ? "تواصل معنا" : "Contact"}</Link>
         </nav>
+        <div className="legal-language-bar" role="group" aria-label="Languages">
+          {[
+            { code: "ar", label: "العربية" },
+            { code: "en", label: "EN" },
+            { code: "bn", label: "বাংলা" },
+            { code: "ur", label: "اردو" },
+            { code: "hi", label: "हिन्दी" },
+            { code: "fr", label: "FR" },
+          ].map((opt) => (
+            <button
+              key={opt.code}
+              type="button"
+              className={`legal-language-toggle ${(isArabic && opt.code === "ar") || (!isArabic && opt.code === "en") ? "active" : ""}`}
+              onClick={() => switchLanguageOnSeoPage(opt.code)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </header>
       <section className="seo-hero">
         <p className="seo-eyebrow">{page.eyebrow}</p>
@@ -181,6 +242,7 @@ export function SeoLandingPage({ slug }: { slug: string }) {
         <div className="seo-hero-actions">
           <a href={whatsappHref(page.language)} target="_blank" rel="noreferrer" className="seo-primary-cta">{isArabic ? "احجز استشارتك عبر واتساب" : "Request a quotation on WhatsApp"}<ArrowUpRight size={16} /></a>
           <a href={`tel:+${"966537358631"}`} className="seo-secondary-cta">{WHATSAPP_DISPLAY}</a>
+          <Link href="/" className="seo-secondary-cta">{isArabic ? "العودة للموقع الرئيسي" : "Back to Main Website"}</Link>
         </div>
       </section>
       <section className="seo-content-grid" aria-label={isArabic ? "معلومات الخدمة" : "Service information"}>
@@ -204,4 +266,5 @@ export function SeoLandingPage({ slug }: { slug: string }) {
   );
 }
 
-export function getSeoPage(slug: string) { return pages[slug]; }
+export function getSeoPage(slug: string) { return resolveSeoPage(slug); }
+

@@ -150,7 +150,55 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin()];
+const STATIC_SPA_ROUTES = [
+  "admin",
+  "about",
+  "contact",
+  "privacy-policy",
+  "terms",
+  "service",
+  "services",
+  "services/ppf-riyadh",
+  "services/paint-protection-film-riyadh",
+  "services/ceramic-coating-riyadh",
+  "services/window-tinting-riyadh",
+  "services/auto-detailing-riyadh",
+  "ar/services",
+  "ar/services/ppf-riyadh",
+  "ar/services/paint-protection-film-riyadh",
+  "ar/services/ceramic-coating-riyadh",
+  "ar/services/window-tinting-riyadh",
+  "ar/services/auto-detailing-riyadh",
+  "ar/services/auto-detailing-",
+  "blog",
+  "blog/best-ppf-in-riyadh",
+  "blog/ppf-vs-ceramic-coating-saudi-arabia",
+  "blog/ceramic-tint-saudi-heat",
+  "ar/blog",
+  "ar/blog/ppf-price-saudi-arabia",
+];
+
+function vitePluginStaticSpaRoutes(): Plugin {
+  return {
+    name: "static-spa-routes",
+    closeBundle() {
+      const outDir = path.resolve(import.meta.dirname, "dist/public");
+      const indexHtmlPath = path.join(outDir, "index.html");
+      if (!fs.existsSync(indexHtmlPath)) return;
+
+      const html = fs.readFileSync(indexHtmlPath, "utf-8");
+      fs.writeFileSync(path.join(outDir, "404.html"), html, "utf-8");
+
+      for (const route of STATIC_SPA_ROUTES) {
+        const routeDir = path.join(outDir, route);
+        fs.mkdirSync(routeDir, { recursive: true });
+        fs.writeFileSync(path.join(routeDir, "index.html"), html, "utf-8");
+      }
+    },
+  };
+}
+
+const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginStaticSpaRoutes()];
 
 export default defineConfig({
   plugins,

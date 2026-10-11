@@ -1,6 +1,8 @@
 import { ArrowLeft, Ghost, Instagram, MessageCircle, Music2, Phone, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import type { ReactNode } from "react";
+import { Link } from "wouter";
+import { isValidLanguage, LANGUAGE_OPTIONS, type Language } from "@/lib/siteContent";
 
 const WHATSAPP_DISPLAY = "+966 53 735 8631";
 const WHATSAPP_URL = "https://wa.me/966537358631";
@@ -8,22 +10,42 @@ const INSTAGRAM_URL = "https://www.instagram.com/ppf_studio_com?igsi=Nmh6b3BmNGR
 const SNAPCHAT_URL = "https://www.snapchat.com/add/jkjabed2026?share_id=lKZ1ASIv4Jk&locale=en-US";
 const TIKTOK_URL = "https://www.tiktok.com/@ppf_studio?_r=1&_t=ZS-99ECEM4AyhB";
 const UPDATED = "September 2, 2026";
+const STORAGE_KEY = "aurelis-language";
 
-function LanguageToggle({ language, setLanguage }: { language: "en" | "ar"; setLanguage: (language: "en" | "ar") => void }) {
-  return <button className="legal-language-toggle" onClick={() => setLanguage(language === "en" ? "ar" : "en")} aria-label={language === "en" ? "Switch to Arabic" : "التبديل إلى الإنجليزية"}>
-    {language === "en" ? "العربية" : "English"}
-  </button>;
+function LanguageToggle({ language, setLanguage }: { language: Language; setLanguage: (language: Language) => void }) {
+  return (
+    <div className="legal-language-bar" role="group" aria-label="Language switcher">
+      {LANGUAGE_OPTIONS.map((opt) => (
+        <button
+          key={opt.code}
+          className={`legal-language-toggle ${language === opt.code ? "active" : ""}`}
+          onClick={() => {
+            setLanguage(opt.code);
+            if (typeof window !== "undefined") window.localStorage.setItem(STORAGE_KEY, opt.code);
+          }}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 function LegalShell({ title, arabicTitle, eyebrow, children }: { title: string; arabicTitle: string; eyebrow: string; children: (language: "en" | "ar") => ReactNode }) {
-  const [language, setLanguage] = useState<"en" | "ar">("en");
-  return <main className="legal-page" dir={language === "ar" ? "rtl" : "ltr"}>
+  const [language, setLanguage] = useState<Language>(() => {
+    if (typeof window === "undefined") return "en";
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    return isValidLanguage(saved) ? saved : "en";
+  });
+  const isRtl = language === "ar" || language === "ur";
+  const contentLang: "en" | "ar" = language === "ar" ? "ar" : "en";
+  return <main className="legal-page" dir={isRtl ? "rtl" : "ltr"}>
     <header className="legal-header page-width">
-      <a className="legal-back" href="/"><ArrowLeft size={16} /> {language === "ar" ? "العودة إلى الموقع" : "Back to website"}</a>
-      <div className="legal-actions"><LanguageToggle language={language} setLanguage={setLanguage} /><a className="legal-admin" href="/admin"><ShieldCheck size={15} /> Admin</a></div>
+      <Link className="legal-back" href="/"><ArrowLeft size={16} /> {language === "ar" ? "العودة إلى الموقع" : "Back to website"}</Link>
+      <div className="legal-actions"><LanguageToggle language={language} setLanguage={setLanguage} /><Link className="legal-admin" href="/admin"><ShieldCheck size={15} /> Admin</Link></div>
     </header>
     <section className="legal-hero page-width"><span className="eyebrow"><span className="eyebrow-rule" />{eyebrow}</span><h1>{language === "ar" ? arabicTitle : title}</h1><p>{language === "ar" ? "آخر تحديث: ٢ سبتمبر ٢٠٢٦" : `Last updated: ${UPDATED}`}</p></section>
-    <article className="legal-content page-width">{children(language)}</article>
+    <article className="legal-content page-width">{children(contentLang)}</article>
     <footer className="legal-footer page-width"><span>PPFStudio · 2026</span><a href={WHATSAPP_URL} target="_blank" rel="noreferrer"><MessageCircle size={15} /> {WHATSAPP_DISPLAY}</a></footer>
   </main>;
 }
