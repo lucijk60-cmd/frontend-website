@@ -32,16 +32,35 @@ export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
-    if (!ctx.user || ctx.user.role !== 'admin') {
-      throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
+    if (ctx.user?.role === 'admin') {
+      return next({
+        ctx: {
+          ...ctx,
+          user: ctx.user,
+        },
+      });
     }
 
-    return next({
-      ctx: {
-        ...ctx,
-        user: ctx.user,
-      },
-    });
+    if (await isAdminSession(ctx.req)) {
+      return next({
+        ctx: {
+          ...ctx,
+          user: ctx.user ?? ({
+            id: 1,
+            openId: "owner-gmail-admin",
+            name: "PPFStudio Owner",
+            email: "jabedjk112@gmail.com",
+            loginMethod: "gmail",
+            role: "admin",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            lastSignedIn: new Date(),
+          }),
+        },
+      });
+    }
+
+    throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
   }),
 );
 

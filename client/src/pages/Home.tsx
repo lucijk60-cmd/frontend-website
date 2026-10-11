@@ -411,15 +411,41 @@ export default function Home() {
         </section>
 
         <section id="before-after" className="section comparison-section page-width">
-          <div className="comparison-copy"><Reveal><SectionHeader eyebrow={c.beforeEyebrow} title={c.beforeTitle} body={c.beforeBody} /></Reveal><Reveal delay={100} className="comparison-instruction"><MoveHorizontal size={20} /><span>{isArabic ? "اسحب للمقارنة" : "Drag to compare"}</span></Reveal></div>
+          <div className="comparison-copy">
+            <Reveal><SectionHeader eyebrow={c.beforeEyebrow} title={c.beforeTitle} body={c.beforeBody} /></Reveal>
+            <Reveal delay={100} className="comparison-instruction"><MoveHorizontal size={20} /><span>{isArabic ? "اسحب للمقارنة" : "Drag to compare"}</span></Reveal>
+            <Reveal delay={140} className="comparison-presets" aria-label={isArabic ? "نسبة المقارنة" : "Comparison view presets"}>
+              <button type="button" className={comparison >= 85 ? "active" : ""} onClick={() => setComparison(92)}>
+                {isArabic ? "قبل الحماية" : "Before (Unprotected)"}
+              </button>
+              <button type="button" className={comparison > 15 && comparison < 85 ? "active" : ""} onClick={() => setComparison(50)}>
+                {isArabic ? "مقارنة 50/50" : "50 / 50 Split"}
+              </button>
+              <button type="button" className={comparison <= 15 ? "active" : ""} onClick={() => setComparison(8)}>
+                {isArabic ? "بعد PPF" : "After (PPF Gloss)"}
+              </button>
+            </Reveal>
+          </div>
           <Reveal delay={100} className="comparison-frame">
-            <div className="comparison-stage">
+            <div className="comparison-stage" dir="ltr">
               <img src={images.secondaryDetail} alt={c.afterLabel} className="comparison-image comparison-image--after" loading="lazy" decoding="async" />
-              <div className="comparison-before" style={{ width: `${comparison}%` }}><img src={images.detailSuv} alt={c.beforeLabel} className="comparison-image" loading="lazy" decoding="async" /></div>
-              <div className="comparison-divider" style={{ left: `${comparison}%` }}><span /></div>
-              <span className="comparison-label comparison-label--before">{c.beforeLabel}</span><span className="comparison-label comparison-label--after">{c.afterLabel}</span>
+              <div className="comparison-after-sheen" aria-hidden="true" />
+              <div className="comparison-before" style={{ clipPath: `inset(0 ${100 - comparison}% 0 0)` }}>
+                <img src={images.detailSuv} alt={c.beforeLabel} className="comparison-image comparison-image--before" loading="lazy" decoding="async" />
+              </div>
+              <div className="comparison-divider" style={{ left: `${comparison}%` }}>
+                <span aria-hidden="true" />
+              </div>
+              <span className="comparison-label comparison-label--before">
+                <strong>{c.beforeLabel}</strong>
+                <small>{isArabic ? "طلاء باهت وخدوش سطحية" : "Dull & swirl-marked"}</small>
+              </span>
+              <span className="comparison-label comparison-label--after">
+                <strong>{c.afterLabel}</strong>
+                <small>{isArabic ? "حماية PPF ولمعان عميق" : "Deep PPF mirror gloss"}</small>
+              </span>
+              <input className="comparison-input" type="range" min="0" max="100" value={comparison} onChange={(event) => setComparison(Number(event.target.value))} aria-label={c.beforeTitle} />
             </div>
-            <input className="comparison-input" type="range" min="0" max="100" value={comparison} onChange={(event) => setComparison(Number(event.target.value))} aria-label={c.beforeTitle} />
           </Reveal>
         </section>
 
@@ -456,7 +482,7 @@ export default function Home() {
           <div className="closing-content page-width"><Reveal><div className="eyebrow eyebrow--light"><span className="eyebrow-rule" />{c.contactEyebrow}</div><h2>{c.contactTitle}</h2><p>{c.contactBody}</p><WhatsAppLink language={language} className="button button--gold">{c.ctaButton}</WhatsAppLink></Reveal><div className="closing-contact"><span>{c.contactLabel}</span><a href={whatsappHref(language)} target="_blank" rel="noreferrer">{WHATSAPP_DISPLAY}</a></div></div>
         </section>
 
-        <section className="home-seo-links page-width" aria-labelledby="home-seo-heading"><div className="eyebrow"><span className="eyebrow-rule" />{language === "ar" ? "خدمات حماية السيارات في السعودية" : "Saudi paint protection services"}</div><h2 id="home-seo-heading">{language === "ar" ? "حماية طلاء السيارات بالرياض وخارجها" : "Paint protection film in Riyadh and Saudi Arabia"}</h2><p>{language === "ar" ? "نقدم تركيب PPF وحماية كاملة للسيارات والعناية بالتفاصيل للسيارات الفاخرة وSUV في الرياض، مع خدمة عملاء ثنائية اللغة." : "Explore premium PPF installation, full-body vehicle protection and automotive detailing for luxury cars and SUVs in Riyadh, with bilingual support."}</p><div className="home-seo-link-grid"><a href={language === "ar" ? "/ar/services/ppf-riyadh" : "/services/ppf-riyadh"}>{language === "ar" ? "تركيب PPF بالرياض" : "PPF Riyadh"}</a><a href={language === "ar" ? "/ar/services/full-body-ppf" : "/services/full-body-ppf"}>{language === "ar" ? "حماية السيارة بالكامل" : "Full-body PPF"}</a><a href={language === "ar" ? "/ar/blog/ppf-price-saudi-arabia" : "/blog/ppf-price-saudi-arabia"}>{language === "ar" ? "أسعار PPF في السعودية" : "PPF price guide Saudi Arabia"}</a></div></section>
+        <section className="home-seo-links page-width" aria-labelledby="home-seo-heading"><div className="eyebrow"><span className="eyebrow-rule" />{language === "ar" ? "خدمات حماية السيارات في السعودية" : "Saudi paint protection services"}</div><h2 id="home-seo-heading">{language === "ar" ? "حماية طلاء السيارات بالرياض وخارجها" : "Paint protection film in Riyadh and Saudi Arabia"}</h2><p>{language === "ar" ? "نقدم تركيب PPF وحماية كاملة للسيارات والعناية بالتفاصيل للسيارات الفاخرة وSUV في الرياض، مع خدمة عملاء ثنائية اللغة." : "Explore premium PPF installation, full-body vehicle protection and automotive detailing for luxury cars and SUVs in Riyadh, with bilingual support."}</p><div className="home-seo-link-grid"><a href={language === "ar" ? "/ar/services/ppf-riyadh" : "/services/ppf-riyadh"}>{language === "ar" ? "تركيب PPF بالرياض" : "PPF Riyadh"}</a><a href={language === "ar" ? "/ar/services/full-body-ppf" : "/services/full-body-ppf"}>{language === "ar" ? "حماية السيارة بالكامل" : "Full-body PPF"}</a><a href="/services/auto-detailing-ppf">{language === "ar" ? "العناية بالسيارات وحماية الطلاء" : "Auto Detailing & PPF"}</a><a href={language === "ar" ? "/ar/blog/ppf-riyadh-guide" : "/blog/ppf-riyadh-guide"}>{language === "ar" ? "دليل حماية السيارات بالرياض" : "Riyadh PPF Guide"}</a><a href={language === "ar" ? "/ar/blog/ppf-price-saudi-arabia" : "/blog/ppf-price-saudi-arabia"}>{language === "ar" ? "أسعار PPF في السعودية" : "PPF price guide Saudi Arabia"}</a><a href="/blog/luxury-car-ppf">{language === "ar" ? "حماية السيارات الفاخرة" : "Luxury Car PPF Guide"}</a></div></section>
       </main>
 
       <footer className="site-footer"><div className="page-width footer-grid"><div><BrandMark /><p>{c.footerDescription}</p></div><div className="footer-column"><span className="footer-label">{c.footerLinks}</span>{c.nav.slice(0, 5).map(([label, id]) => <button key={id} onClick={() => scrollToSection(id)}>{label}</button>)}<a className="footer-legal-link" href="/privacy">{language === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}</a><a className="footer-legal-link" href="/terms">{language === "ar" ? "الشروط والأحكام" : "Terms of Service"}</a><a className="footer-legal-link" href="/contact">{language === "ar" ? "التواصل" : "Contact"}</a></div><div className="footer-column"><span className="footer-label">{c.footerContact}</span><WhatsAppLink language={language}>{WHATSAPP_DISPLAY}</WhatsAppLink><div className="social-links" aria-label="PPFStudio social profiles"><a className="social-link" href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on Instagram"><Instagram size={16} /> <span>Instagram</span></a><a className="social-link" href={SNAPCHAT_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on Snapchat"><Ghost size={16} /> <span>Snapchat</span></a><a className="social-link" href={TIKTOK_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on TikTok"><Music2 size={16} /> <span>TikTok</span></a><a className="social-link social-link--admin" href="/admin" aria-label="Open PPFStudio Admin panel"><ShieldCheck size={16} /> <span>Admin</span></a></div></div></div><div className="page-width footer-bottom"><span>{c.footerCopyright}</span><button onClick={openLanguageModal}>{language === "ar" ? "English" : "العربية"}</button></div></footer>

@@ -81,10 +81,11 @@ export function handleFirestoreError(
 
 export async function testConnection() {
   try {
-    await getDocFromServer(doc(db, "test", "connection"));
+    const q = query(collection(db, "reviews"), where("status", "==", "approved"));
+    await getDocs(q);
   } catch (error) {
     if (error instanceof Error && error.message.includes("the client is offline")) {
-      console.error("Please check your Firebase configuration.");
+      console.warn("Firebase client is currently offline.");
     }
   }
 }

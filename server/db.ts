@@ -1,10 +1,99 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import { createHash } from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { AdminMedia, CallSession, InsertAdminMedia, InsertReview, InsertUser, InsertVisitorEvent, adminMedia, callBusinesses, callSessions, reviews, users, visitorEvents } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
+
+const INITIAL_APPROVED_REVIEWS = [
+  {
+    id: 1,
+    publicReference: "PPF-911GT3RIYADH",
+    name: "Faisal Al-Saud",
+    vehicle: "Porsche 911 GT3",
+    rating: 5,
+    review: "Flawless full-body PPF installation. The edges are completely wrapped and invisible even under direct studio inspection lighting.",
+    reviewAr: "تركيب حماية كاملة للسيارة بإتقان استثنائي. الحواف مخفية تماماً والنتيجة غير مرئية حتى تحت الإضاءة المباشرة.",
+    status: "approved" as const,
+    moderatedAt: new Date("2026-08-18T14:00:00Z"),
+    moderatedBy: 1,
+    createdAt: new Date("2026-08-18T10:30:00Z"),
+    updatedAt: new Date("2026-08-18T14:00:00Z"),
+  },
+  {
+    id: 2,
+    publicReference: "PPF-AMG63RIYADH1",
+    name: "Tariq Al-Qahtani",
+    vehicle: "Mercedes-AMG G63",
+    rating: 5,
+    review: "Protected my G63 with matte stealth PPF before highway travel. Zero peeling, spotless preparation, and true luxury service in Riyadh.",
+    reviewAr: "قمت بحماية سيارتي G63 بفيلم حماية مطفي قبل السفر على الطرق السريعة. تجهيز دقيق وخدمة احترافية راقية جداً في الرياض.",
+    status: "approved" as const,
+    moderatedAt: new Date("2026-08-22T16:20:00Z"),
+    moderatedBy: 1,
+    createdAt: new Date("2026-08-22T12:15:00Z"),
+    updatedAt: new Date("2026-08-22T16:20:00Z"),
+  },
+  {
+    id: 3,
+    publicReference: "PPF-RRSV2026KSA1",
+    name: "Khalid Al-Otaibi",
+    vehicle: "Range Rover Autobiography",
+    rating: 5,
+    review: "Optical clarity is remarkable—it looks deeper than factory paint while defending against sand and highway stone chips.",
+    reviewAr: "وضوح الفيلم ولمعانه يفوق الوصف، يبدو أعمق من طلاء الوكالة مع حماية ممتازة ضد الرمل والحصى على الطرق السريعة.",
+    status: "approved" as const,
+    moderatedAt: new Date("2026-08-27T18:00:00Z"),
+    moderatedBy: 1,
+    createdAt: new Date("2026-08-27T15:00:00Z"),
+    updatedAt: new Date("2026-08-27T18:00:00Z"),
+  },
+  {
+    id: 4,
+    publicReference: "PPF-LX600VIPKSA2",
+    name: "Nasser Al-Harbi",
+    vehicle: "Lexus LX 600",
+    rating: 5,
+    review: "Every panel was inspected under controlled lighting before delivery. Easily the most meticulous PPF studio I have visited.",
+    reviewAr: "تم فحص كل جزء تحت إضاءة دقيقة قبل التسليم. من أفضل وأدق استوديوهات حماية الطلاء التي تعاملت معها.",
+    status: "approved" as const,
+    moderatedAt: new Date("2026-09-01T17:10:00Z"),
+    moderatedBy: 1,
+    createdAt: new Date("2026-09-01T11:45:00Z"),
+    updatedAt: new Date("2026-09-01T17:10:00Z"),
+  },
+  {
+    id: 5,
+    publicReference: "PPF-BMWM5COMP26A",
+    name: "Salman Al-Dosari",
+    vehicle: "BMW M5 Competition",
+    rating: 5,
+    review: "Front-end track package plus ceramic coating made washing effortless. Fast communication on WhatsApp from booking to handover.",
+    reviewAr: "باقة حماية الواجهة الأمامية مع الطلاء الخزفي جعلت تنظيف السيارة سهلاً للغاية. تواصل سريع وواضح عبر واتساب من الحجز حتى التسليم.",
+    status: "approved" as const,
+    moderatedAt: new Date("2026-09-04T19:00:00Z"),
+    moderatedBy: 1,
+    createdAt: new Date("2026-09-04T13:20:00Z"),
+    updatedAt: new Date("2026-09-04T19:00:00Z"),
+  },
+  {
+    id: 6,
+    publicReference: "PPF-LUCIDAIR2026",
+    name: "Omar Al-Ghamdi",
+    vehicle: "Lucid Air Grand Touring",
+    rating: 5,
+    review: "Seamless installation around complex sensors and headlights without a single visible seam. Worth every riyal.",
+    reviewAr: "تركيب متقن حول الحساسات والمصابيح دون أي فواصل ظاهرة. جودة تستحق كل ريال.",
+    status: "approved" as const,
+    moderatedAt: new Date("2026-09-08T15:30:00Z"),
+    moderatedBy: 1,
+    createdAt: new Date("2026-09-08T10:00:00Z"),
+    updatedAt: new Date("2026-09-08T15:30:00Z"),
+  },
+];
 
 // In-memory mock fallback when DATABASE_URL is not configured or unreachable
 const memoryStore = {
@@ -12,10 +101,71 @@ const memoryStore = {
   visitorEvents: [] as Array<InsertVisitorEvent & { id: number; createdAt: Date }>,
   callBusinesses: new Map<string, any>(),
   callSessions: new Map<string, CallSession>(),
-  reviews: [] as Array<any>,
+  reviews: [...INITIAL_APPROVED_REVIEWS] as Array<any>,
   adminMedia: [] as Array<AdminMedia>,
-  nextId: 1,
+  nextId: 100,
 };
+
+const STORE_FILE_PATH = path.resolve(process.cwd(), "data", "local-store.json");
+
+function loadPersistedStore() {
+  if (process.env.VITEST) return;
+  try {
+    if (!fs.existsSync(STORE_FILE_PATH)) return;
+    const raw = JSON.parse(fs.readFileSync(STORE_FILE_PATH, "utf-8"));
+    if (Array.isArray(raw.reviews) && raw.reviews.length > 0) {
+      memoryStore.reviews = raw.reviews.map((r: any) => ({
+        ...r,
+        createdAt: new Date(r.createdAt),
+        updatedAt: new Date(r.updatedAt ?? r.createdAt),
+        moderatedAt: r.moderatedAt ? new Date(r.moderatedAt) : null,
+      }));
+    }
+    if (Array.isArray(raw.adminMedia)) {
+      memoryStore.adminMedia = raw.adminMedia.map((m: any) => ({
+        ...m,
+        createdAt: new Date(m.createdAt),
+        updatedAt: new Date(m.updatedAt ?? m.createdAt),
+      }));
+    }
+    if (Array.isArray(raw.visitorEvents)) {
+      memoryStore.visitorEvents = raw.visitorEvents.map((e: any) => ({
+        ...e,
+        createdAt: new Date(e.createdAt),
+      }));
+    }
+    if (typeof raw.nextId === "number" && raw.nextId > memoryStore.nextId) {
+      memoryStore.nextId = raw.nextId;
+    }
+  } catch {
+    // ignore corrupt local store file
+  }
+}
+
+function savePersistedStore() {
+  if (process.env.VITEST) return;
+  try {
+    fs.mkdirSync(path.dirname(STORE_FILE_PATH), { recursive: true });
+    fs.writeFileSync(
+      STORE_FILE_PATH,
+      JSON.stringify(
+        {
+          nextId: memoryStore.nextId,
+          reviews: memoryStore.reviews,
+          adminMedia: memoryStore.adminMedia,
+          visitorEvents: memoryStore.visitorEvents.slice(-500),
+        },
+        null,
+        2
+      ),
+      "utf-8"
+    );
+  } catch {
+    // ignore write errors
+  }
+}
+
+loadPersistedStore();
 
 function hasValidDatabaseUrl(url: string | undefined): url is string {
   if (!url) return false;
@@ -78,6 +228,7 @@ export async function recordVisitorEvent(input: Omit<InsertVisitorEvent, "id" | 
       id: memoryStore.nextId++,
       createdAt: new Date(),
     });
+    savePersistedStore();
     return;
   }
   try {
@@ -89,6 +240,7 @@ export async function recordVisitorEvent(input: Omit<InsertVisitorEvent, "id" | 
       id: memoryStore.nextId++,
       createdAt: new Date(),
     });
+    savePersistedStore();
   }
 }
 
@@ -328,6 +480,7 @@ export async function createReview(review: InsertReview) {
       createdAt: now,
       updatedAt: now,
     });
+    savePersistedStore();
     return { id };
   }
   const [result] = await dbInstance.insert(reviews).values(review);
@@ -404,6 +557,7 @@ export async function updateReviewStatus(id: number, status: "approved" | "rejec
       item.moderatedAt = new Date();
       item.moderatedBy = moderatedBy;
       item.updatedAt = new Date();
+      savePersistedStore();
     }
     return { success: true } as const;
   }
@@ -430,6 +584,7 @@ export async function createAdminMedia(media: InsertAdminMedia) {
       createdAt: now,
       updatedAt: now,
     });
+    savePersistedStore();
     return { id };
   }
   const [result] = await dbInstance.insert(adminMedia).values(media);
@@ -462,6 +617,7 @@ export async function updateAdminMedia(id: number, values: Partial<InsertAdminMe
     const item = memoryStore.adminMedia.find(m => m.id === id);
     if (item) {
       Object.assign(item, values, { updatedAt: new Date() });
+      savePersistedStore();
     }
     return { success: true } as const;
   }
