@@ -1,0 +1,236 @@
+{
+  "nextId": 116,
+  "reviews": [
+    {
+      "id": 1,
+      "publicReference": "PPF-911GT3RIYADH",
+      "name": "Faisal Al-Saud",
+      "vehicle": "Porsche 911 GT3",
+      "rating": 5,
+      "review": "Flawless full-body PPF installation. The edges are completely wrapped and invisible even under direct studio inspection lighting.",
+      "reviewAr": "تركيب حماية كاملة للسيارة بإتقان استثنائي. الحواف مخفية تماماً والنتيجة غير مرئية حتى تحت الإضاءة المباشرة.",
+      "status": "approved",
+      "moderatedAt": "2026-08-18T14:00:00.000Z",
+      "moderatedBy": 1,
+      "createdAt": "2026-08-18T10:30:00.000Z",
+      "updatedAt": "2026-08-18T14:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "publicReference": "PPF-AMG63RIYADH1",
+      "name": "Tariq Al-Qahtani",
+      "vehicle": "Mercedes-AMG G63",
+      "rating": 5,
+      "review": "Protected my G63 with matte stealth PPF before highway travel. Zero peeling, spotless preparation, and true luxury service in Riyadh.",
+      "reviewAr": "قمت بحماية سيارتي G63 بفيلم حماية مطفي قبل السفر على الطرق السريعة. تجهيز دقيق وخدمة احترافية راقية جداً في الرياض.",
+      "status": "approved",
+      "moderatedAt": "2026-08-22T16:20:00.000Z",
+      "moderatedBy": 1,
+      "createdAt": "2026-08-22T12:15:00.000Z",
+      "updatedAt": "2026-08-22T16:20:00.000Z"
+    },
+    {
+      "id": 3,
+      "publicReference": "PPF-RRSV2026KSA1",
+      "name": "Khalid Al-Otaibi",
+      "vehicle": "Range Rover Autobiography",
+      "rating": 5,
+      "review": "Optical clarity is remarkable—it looks deeper than factory paint while defending against sand and highway stone chips.",
+      "reviewAr": "وضوح الفيلم ولمعانه يفوق الوصف، يبدو أعمق من طلاء الوكالة مع حماية ممتازة ضد الرمل والحصى على الطرق السريعة.",
+      "status": "approved",
+      "moderatedAt": "2026-08-27T18:00:00.000Z",
+      "moderatedBy": 1,
+      "createdAt": "2026-08-27T15:00:00.000Z",
+      "updatedAt": "2026-08-27T18:00:00.000Z"
+    },
+    {
+      "id": 4,
+      "publicReference": "PPF-LX600VIPKSA2",
+      "name": "Nasser Al-Harbi",
+      "vehicle": "Lexus LX 600",
+      "rating": 5,
+      "review": "Every panel was inspected under controlled lighting before delivery. Easily the most meticulous PPF studio I have visited.",
+      "reviewAr": "تم فحص كل جزء تحت إضاءة دقيقة قبل التسليم. من أفضل وأدق استوديوهات حماية الطلاء التي تعاملت معها.",
+      "status": "approved",
+      "moderatedAt": "2026-09-01T17:10:00.000Z",
+      "moderatedBy": 1,
+      "createdAt": "2026-09-01T11:45:00.000Z",
+      "updatedAt": "2026-09-01T17:10:00.000Z"
+    },
+    {
+      "id": 5,
+      "publicReference": "PPF-BMWM5COMP26A",
+      "name": "Salman Al-Dosari",
+      "vehicle": "BMW M5 Competition",
+      "rating": 5,
+      "review": "Front-end track package plus ceramic coating made washing effortless. Fast communication on WhatsApp from booking to handover.",
+      "reviewAr": "باقة حماية الواجهة الأمامية مع الطلاء الخزفي جعلت تنظيف السيارة سهلاً للغاية. تواصل سريع وواضح عبر واتساب من الحجز حتى التسليم.",
+      "status": "approved",
+      "moderatedAt": "2026-09-04T19:00:00.000Z",
+      "moderatedBy": 1,
+      "createdAt": "2026-09-04T13:20:00.000Z",
+      "updatedAt": "2026-09-04T19:00:00.000Z"
+    },
+    {
+      "id": 6,
+      "publicReference": "PPF-LUCIDAIR2026",
+      "name": "Omar Al-Ghamdi",
+      "vehicle": "Lucid Air Grand Touring",
+      "rating": 5,
+      "review": "Seamless installation around complex sensors and headlights without a single visible seam. Worth every riyal.",
+      "reviewAr": "تركيب متقن حول الحساسات والمصابيح دون أي فواصل ظاهرة. جودة تستحق كل ريال.",
+      "status": "approved",
+      "moderatedAt": "2026-09-08T15:30:00.000Z",
+      "moderatedBy": 1,
+      "createdAt": "2026-09-08T10:00:00.000Z",
+      "updatedAt": "2026-09-08T15:30:00.000Z"
+    }
+  ],
+  "adminMedia": [],
+  "visitorEvents": [
+    {
+      "visitorKeyHash": "5c93ced50ff8887db6dabbe69c4b328180449b5aa7bb9f3b82cafcaae6acdd92",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://ais-dev-fjh7xu2hpl32pp4udrkd6d-736681493362.europe-west2.run.app/",
+      "id": 100,
+      "createdAt": "2026-10-11T05:42:16.661Z"
+    },
+    {
+      "visitorKeyHash": "5e7612b74cee7ca1b3bcd6ecf7b7c062b7904abb7b20eac5207cfb9f3ea98315",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "unknown",
+      "referrer": null,
+      "id": 101,
+      "createdAt": "2026-10-11T05:43:11.873Z"
+    },
+    {
+      "visitorKeyHash": "5c93ced50ff8887db6dabbe69c4b328180449b5aa7bb9f3b82cafcaae6acdd92",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://ais-dev-fjh7xu2hpl32pp4udrkd6d-736681493362.europe-west2.run.app/",
+      "id": 102,
+      "createdAt": "2026-10-11T05:43:13.409Z"
+    },
+    {
+      "visitorKeyHash": "5c93ced50ff8887db6dabbe69c4b328180449b5aa7bb9f3b82cafcaae6acdd92",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://aistudio.google.com/",
+      "id": 103,
+      "createdAt": "2026-10-11T05:43:17.521Z"
+    },
+    {
+      "visitorKeyHash": "5c93ced50ff8887db6dabbe69c4b328180449b5aa7bb9f3b82cafcaae6acdd92",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://ais-dev-fjh7xu2hpl32pp4udrkd6d-736681493362.europe-west2.run.app/",
+      "id": 104,
+      "createdAt": "2026-10-11T05:47:11.900Z"
+    },
+    {
+      "visitorKeyHash": "5c93ced50ff8887db6dabbe69c4b328180449b5aa7bb9f3b82cafcaae6acdd92",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://ais-dev-fjh7xu2hpl32pp4udrkd6d-736681493362.europe-west2.run.app/",
+      "id": 105,
+      "createdAt": "2026-10-11T05:47:20.164Z"
+    },
+    {
+      "visitorKeyHash": "5e7612b74cee7ca1b3bcd6ecf7b7c062b7904abb7b20eac5207cfb9f3ea98315",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "unknown",
+      "referrer": null,
+      "id": 106,
+      "createdAt": "2026-10-11T05:47:20.739Z"
+    },
+    {
+      "visitorKeyHash": "5c93ced50ff8887db6dabbe69c4b328180449b5aa7bb9f3b82cafcaae6acdd92",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://aistudio.google.com/",
+      "id": 107,
+      "createdAt": "2026-10-11T05:47:26.256Z"
+    },
+    {
+      "visitorKeyHash": "5e7612b74cee7ca1b3bcd6ecf7b7c062b7904abb7b20eac5207cfb9f3ea98315",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "unknown",
+      "referrer": null,
+      "id": 108,
+      "createdAt": "2026-10-11T06:05:26.481Z"
+    },
+    {
+      "visitorKeyHash": "5c93ced50ff8887db6dabbe69c4b328180449b5aa7bb9f3b82cafcaae6acdd92",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://aistudio.google.com/",
+      "id": 109,
+      "createdAt": "2026-10-11T06:05:32.138Z"
+    },
+    {
+      "visitorKeyHash": "5c93ced50ff8887db6dabbe69c4b328180449b5aa7bb9f3b82cafcaae6acdd92",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://ais-dev-fjh7xu2hpl32pp4udrkd6d-736681493362.europe-west2.run.app/",
+      "id": 110,
+      "createdAt": "2026-10-11T06:06:19.452Z"
+    },
+    {
+      "visitorKeyHash": "5e7612b74cee7ca1b3bcd6ecf7b7c062b7904abb7b20eac5207cfb9f3ea98315",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "unknown",
+      "referrer": null,
+      "id": 111,
+      "createdAt": "2026-10-11T06:07:23.762Z"
+    },
+    {
+      "visitorKeyHash": "5c93ced50ff8887db6dabbe69c4b328180449b5aa7bb9f3b82cafcaae6acdd92",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://ais-dev-fjh7xu2hpl32pp4udrkd6d-736681493362.europe-west2.run.app/",
+      "id": 112,
+      "createdAt": "2026-10-11T06:07:26.576Z"
+    },
+    {
+      "visitorKeyHash": "5c93ced50ff8887db6dabbe69c4b328180449b5aa7bb9f3b82cafcaae6acdd92",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://aistudio.google.com/",
+      "id": 113,
+      "createdAt": "2026-10-11T06:07:29.568Z"
+    },
+    {
+      "visitorKeyHash": "5c93ced50ff8887db6dabbe69c4b328180449b5aa7bb9f3b82cafcaae6acdd92",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://ais-dev-fjh7xu2hpl32pp4udrkd6d-736681493362.europe-west2.run.app/",
+      "id": 114,
+      "createdAt": "2026-10-11T06:09:43.295Z"
+    },
+    {
+      "visitorKeyHash": "5c93ced50ff8887db6dabbe69c4b328180449b5aa7bb9f3b82cafcaae6acdd92",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://ais-dev-fjh7xu2hpl32pp4udrkd6d-736681493362.europe-west2.run.app/",
+      "id": 115,
+      "createdAt": "2026-10-11T06:12:23.511Z"
+    }
+  ]
+}
