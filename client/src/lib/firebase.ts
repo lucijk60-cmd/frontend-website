@@ -8,6 +8,7 @@ import {
 } from "firebase/auth";
 import {
   collection,
+  deleteDoc,
   doc,
   getDocFromServer,
   getDocs,
@@ -147,3 +148,26 @@ export async function updateReviewStatusInFirestore(reviewId: string, status: "a
     handleFirestoreError(error, OperationType.UPDATE, path);
   }
 }
+
+export async function deleteReviewFromFirestore(reviewId: string) {
+  if (!auth.currentUser) return;
+  const safeId = reviewId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 128);
+  const path = `reviews/${safeId}`;
+  try {
+    await deleteDoc(doc(db, "reviews", safeId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+export async function deleteAdminMediaFromFirestore(mediaId: string) {
+  if (!auth.currentUser) return;
+  const safeId = mediaId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 128);
+  const path = `adminMedia/${safeId}`;
+  try {
+    await deleteDoc(doc(db, "adminMedia", safeId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+

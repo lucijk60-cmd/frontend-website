@@ -22,7 +22,7 @@ export function isValidLanguage(value: string | null | undefined): value is Lang
   return value === "en" || value === "ar" || value === "bn" || value === "ur" || value === "hi" || value === "fr";
 }
 
-export const BRAND_NAME = "PPFStudio";
+export const BRAND_NAME = "PPF Studio";
 
 export const WHATSAPP_NUMBER = "966537358631";
 export const WHATSAPP_DISPLAY = "+966 53 735 8631";

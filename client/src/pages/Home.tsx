@@ -21,7 +21,6 @@ import {
   Music2,
   MessageCircle,
   MoveHorizontal,
-  Play,
   Plus,
   Ruler,
   ShieldCheck,
@@ -40,20 +39,21 @@ import { getLocalizedReviewText, getReviewSubmissionNotice, normalizeReviewRefer
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   BRAND_NAME,
-  galleryItems,
   images,
-  INSTAGRAM_URL,
   isValidLanguage,
   LANGUAGE_OPTIONS,
-  SNAPCHAT_URL,
-  TIKTOK_URL,
-  translations,
   type Content,
   type Language,
-  videoItems,
   whatsappHref,
-  WHATSAPP_DISPLAY,
 } from "@/lib/siteContent";
+import {
+  DEFAULT_SEO_BUTTONS,
+  getCustomStaticGalleryItems,
+  getCustomStaticVideoItems,
+  getMergedContent,
+  getMergedExtraTexts,
+  useSiteCustomization,
+} from "@/lib/siteCustomization";
 
 const VIDEO_SOURCE = "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4";
 const STORAGE_KEY = "aurelis-language";
@@ -71,21 +71,44 @@ function getStoredLanguage(): Language | null {
   return isValidLanguage(saved) ? saved : null;
 }
 
-function BrandMark({ compact = false }: { compact?: boolean }) {
+function BrandMark({
+  compact = false,
+  primary = "PPF",
+  secondary = "Studio",
+}: {
+  compact?: boolean;
+  primary?: string;
+  secondary?: string;
+}) {
   return (
     <span className={compact ? "brand-lockup brand-lockup--compact" : "brand-lockup"} aria-label={BRAND_NAME}>
       <InlineBrandMark alt="PPF Paint Protection Film logo" className="brand-mark" />
-      <span className="brand-wordmark"><b>PPF</b><i>Studio</i></span>
+      <span className="brand-wordmark">
+        <b>{primary}</b>
+        <i>{secondary}</i>
+      </span>
     </span>
   );
 }
 
-function WhatsAppLink({ language, children, className = "", compact = false }: { language: Language; children: ReactNode; className?: string; compact?: boolean }) {
-  const c = translations[language];
+function WhatsAppLink({
+  language,
+  children,
+  className = "",
+  compact = false,
+  customHref,
+}: {
+  language: Language;
+  children: ReactNode;
+  className?: string;
+  compact?: boolean;
+  customHref?: string;
+}) {
+  const resolvedHref = customHref && customHref.trim() ? customHref.trim() : whatsappHref(language);
   return (
     <a
       className={`whatsapp-link ${compact ? "whatsapp-link--compact" : ""} ${className}`}
-      href={whatsappHref(language)}
+      href={resolvedHref}
       target="_blank"
       rel="noreferrer"
       aria-label={language === "ar" ? "التواصل معنا عبر واتساب" : "Chat with us on WhatsApp"}
@@ -154,7 +177,12 @@ export default function Home() {
   const [referenceCopied, setReferenceCopied] = useState(false);
   const [, setLocation] = useLocation();
   const statsRef = useRef<HTMLElement | null>(null);
-  const c: Content = translations[language];
+
+  const serverSiteConfigQuery = trpc.admin.siteConfig.get.useQuery(undefined, { retry: false });
+  const [siteCustom] = useSiteCustomization(serverSiteConfigQuery.data);
+
+  const c: Content = useMemo(() => getMergedContent(language, siteCustom), [language, siteCustom]);
+  const extraTexts = useMemo(() => getMergedExtraTexts(language, siteCustom), [language, siteCustom]);
   const isArabic = c.dir === "rtl";
   const mediaLanguage = language === "ar" ? "ar" : "en";
   const { user } = useAuth();
@@ -216,13 +244,13 @@ export default function Home() {
   useEffect(() => {
     document.documentElement.lang = c.locale;
     document.documentElement.dir = c.dir;
-    document.title = language === "ar" ? "حماية الطلاء PPF | حماية احترافية للسيارات" : "Premium PPF Film | Professional Paint Protection";
+    document.title = language === "ar" ? siteCustom.brand.pageTitleAr : siteCustom.brand.pageTitleEn;
     const description = language === "ar"
-      ? "حماية احترافية لطلاء السيارات باستخدام أفلام PPF عالية الجودة وتركيب دقيق في استوديو PPFStudio."
-      : "Premium paint protection film, precision installation and automotive care from PPFStudio.";
+      ? siteCustom.brand.metaDescriptionAr
+      : siteCustom.brand.metaDescriptionEn;
     const meta = document.querySelector('meta[name="description"]');
     if (meta) meta.setAttribute("content", description);
-  }, [c.dir, c.locale, language]);
+  }, [c.dir, c.locale, language, siteCustom.brand]);
 
   useEffect(() => {
     if (!statsRef.current) return;
@@ -247,23 +275,36 @@ export default function Home() {
     setShowLanguageModal(true);
   };
 
-  const scrollToSection = (id: string) => {
+  const scrollToSection = (idOrTarget: string) => {
     setMobileMenuOpen(false);
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const trimmed = idOrTarget.trim();
+    if (!trimmed) return;
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      window.open(trimmed, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (trimmed.startsWith("/")) {
+      setLocation(trimmed);
+      return;
+    }
+    const cleanId = trimmed.replace(/^#/, "");
+    document.getElementById(cleanId)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const localizedGalleryItems = useMemo(() => {
-    const staticItems = galleryItems.map((item) => language === "ar" && "arSrc" in item ? { ...item, src: item.arSrc, alt: item.arAlt } : item);
+    const staticItems = getCustomStaticGalleryItems(language, siteCustom);
     const uploadedItems = selectPublishedMedia(publishedMediaQuery.data ?? [], mediaLanguage, "image")
       .map((item) => ({ id: 10000 + item.id, category: "Admin Uploads", src: item.url, alt: item.title }));
     return [...staticItems, ...uploadedItems];
-  }, [language, mediaLanguage, publishedMediaQuery.data]);
+  }, [language, mediaLanguage, publishedMediaQuery.data, siteCustom]);
+
   const videoDisplayItems = useMemo(() => {
-    const staticVideos = videoItems.map(item => ({ ...item, poster: item.src, src: "videoSrc" in item && item.videoSrc ? item.videoSrc : item.src, isUploaded: "isEmbedded" in item ? item.isEmbedded : false }));
+    const staticVideos = getCustomStaticVideoItems(siteCustom);
     const uploadedVideos = selectPublishedMedia(publishedMediaQuery.data ?? [], mediaLanguage, "video")
       .map((item) => ({ title: item.title, src: item.url, poster: images.galleryCoupe, isUploaded: true }));
     return [...staticVideos, ...uploadedVideos];
-  }, [mediaLanguage, publishedMediaQuery.data]);
+  }, [mediaLanguage, publishedMediaQuery.data, siteCustom]);
+
   const filteredGallery = useMemo(() => {
     if (activeFilter === 0) return localizedGalleryItems;
     return localizedGalleryItems.filter((item) => item.category === galleryFilterKeys[activeFilter]);
@@ -292,14 +333,35 @@ export default function Home() {
     }
   };
 
+  const themeStyle = useMemo(
+    () =>
+      ({
+        "--gold": siteCustom.brand.goldColor || "#c8a56b",
+        "--gold-light": siteCustom.brand.goldLightColor || "#e0c995",
+        "--ink": siteCustom.brand.inkColor || "#080909",
+        "--green": siteCustom.brand.greenColor || "#25d366",
+      }) as CSSProperties,
+    [siteCustom.brand]
+  );
+
+  const customWhatsappUrl = useMemo(() => {
+    const cleanNum = siteCustom.brand.whatsappNumber?.replace(/[^0-9]/g, "");
+    if (cleanNum && cleanNum !== "966537358631") {
+      return `https://wa.me/${cleanNum}`;
+    }
+    return "";
+  }, [siteCustom.brand.whatsappNumber]);
+
+  const seoButtons = siteCustom.buttons.seoButtons?.length ? siteCustom.buttons.seoButtons : DEFAULT_SEO_BUTTONS;
+
   return (
-    <div className={`site-shell ${isArabic ? "site-shell--rtl" : ""}`}>
-      {isLoading && (
+    <div className={`site-shell ${isArabic ? "site-shell--rtl" : ""}`} style={themeStyle}>
+      {isLoading && siteCustom.sections.preloader && (
         <div className="preloader" aria-live="polite">
           <div className="preloader-orbit preloader-orbit--outer" />
           <div className="preloader-orbit preloader-orbit--inner" />
           <div className="preloader-logo-wrap"><InlineBrandMark alt="" className="preloader-mark" /><span className="preloader-corner preloader-corner--tl" /><span className="preloader-corner preloader-corner--br" /></div>
-          <div className="preloader-copy"><span className="preloader-kicker">PPF / PAINT PROTECTION FILM</span><strong>Preparing your finish</strong><span className="preloader-status">PPFSTUDIO / 2026</span></div>
+          <div className="preloader-copy"><span className="preloader-kicker">{siteCustom.brand.preloaderKicker}</span><strong>{siteCustom.brand.preloaderTitle}</strong><span className="preloader-status">{siteCustom.brand.preloaderStatus}</span></div>
           <div className="preloader-progress"><span /></div>
         </div>
       )}
@@ -307,7 +369,7 @@ export default function Home() {
       <header className={`site-nav ${scrolled ? "site-nav--scrolled" : ""}`}>
         <div className="nav-inner">
           <button className="brand-button" onClick={() => scrollToSection("home")} aria-label="PPFStudio home">
-            <BrandMark />
+            <BrandMark primary={siteCustom.brand.brandPrimary} secondary={siteCustom.brand.brandSecondary} />
           </button>
           <nav className="desktop-nav" aria-label="Primary navigation">
             {c.nav.map(([label, id]) => (
@@ -338,7 +400,7 @@ export default function Home() {
                 <Globe size={13} />
               </button>
             </div>
-            <WhatsAppLink language={language} compact>{c.navCta}</WhatsAppLink>
+            <WhatsAppLink language={language} compact customHref={siteCustom.buttons.navCtaUrl || customWhatsappUrl}>{c.navCta}</WhatsAppLink>
             <button className="menu-button" onClick={() => setMobileMenuOpen(true)} aria-label={c.menu}>
               <Menu size={22} />
             </button>
@@ -349,7 +411,7 @@ export default function Home() {
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <SheetContent side={isArabic ? "left" : "right"} className="mobile-sheet">
           <SheetHeader>
-            <BrandMark compact />
+            <BrandMark compact primary={siteCustom.brand.brandPrimary} secondary={siteCustom.brand.brandSecondary} />
             <SheetTitle className="sr-only">{c.menu}</SheetTitle>
             <SheetDescription className="sr-only">PPFStudio navigation</SheetDescription>
           </SheetHeader>
@@ -371,154 +433,239 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            <WhatsAppLink language={language}>{c.navCta}</WhatsAppLink>
+            <WhatsAppLink language={language} customHref={siteCustom.buttons.navCtaUrl || customWhatsappUrl}>{c.navCta}</WhatsAppLink>
           </div>
         </SheetContent>
       </Sheet>
 
       <main>
-        <section id="home" className="hero-section">
-          <img src={images.hero} alt="Black sports coupe receiving precision paint protection film installation" className="hero-image" fetchPriority="high" decoding="async" />
-          <div className="hero-overlay" />
-          <div className="hero-grid-lines" />
-          <div className="hero-content page-width">
-            <Reveal className="hero-copy">
-              <div className="eyebrow eyebrow--light"><span className="eyebrow-rule" />{c.heroEyebrow}</div>
-              <h1>{c.heroTitle}</h1>
-              <p>{c.heroBody}</p>
-              <div className="hero-actions">
-                <button className="button button--gold" onClick={() => scrollToSection("work")}>{c.viewWork}<ArrowUpRight size={17} /></button>
-                <button className="button button--line" onClick={() => scrollToSection("contact")}>{c.book}<ArrowDown size={17} /></button>
-              </div>
-              <WhatsAppLink language={language} className="hero-whatsapp">{c.heroWhatsapp}</WhatsAppLink>
-            </Reveal>
-            <div className="hero-side-note">
-              <span>01</span><span className="hero-side-rule" /><span>{isArabic ? "حماية الطلاء" : "PAINT PROTECTION"}</span>
-            </div>
-          </div>
-          <button className="scroll-cue" onClick={() => scrollToSection("services")} aria-label={c.scroll}><span>{c.scroll}</span><ChevronDown size={17} /></button>
-        </section>
-
-        <section id="services" className="section services-section page-width">
-          <div className="section-intro split-intro">
-            <Reveal><SectionHeader eyebrow={c.servicesEyebrow} title={c.servicesTitle} body={c.servicesBody} /></Reveal>
-            <Reveal delay={80} className="section-aside-note"><span>PPF / 2026</span><p>{isArabic ? "حماية متقدمة. تركيب دقيق." : "Advanced protection. Measured installation."}</p></Reveal>
-          </div>
-          <Reveal delay={120}><div className="section-label-row"><h3>{c.servicesHeading}</h3><span>06 {isArabic ? "خدمات" : "SERVICES"}</span></div></Reveal>
-          <div className="services-grid">
-            {c.services.map(([title, body, number], index) => (
-              <Reveal key={number} delay={index * 45} className="service-card">
-                <div className="service-topline"><span>{number}</span><ArrowUpRight size={18} /></div>
-                <div className="service-icon">{index === 0 ? <ShieldCheck /> : index === 1 ? <Sparkles /> : index === 2 ? <Ruler /> : index === 3 ? <Droplets /> : index === 4 ? <SunMedium /> : <Plus />}</div>
-                <h3>{title}</h3>
-                <p>{body}</p>
-                <span className="service-underline" />
+        {siteCustom.sections.hero && (
+          <section id="home" className="hero-section">
+            <img src={siteCustom.media.heroImage || images.hero} alt="Black sports coupe receiving precision paint protection film installation" className="hero-image" fetchPriority="high" decoding="async" />
+            <div className="hero-overlay" />
+            <div className="hero-grid-lines" />
+            <div className="hero-content page-width">
+              <Reveal className="hero-copy">
+                <div className="eyebrow eyebrow--light"><span className="eyebrow-rule" />{c.heroEyebrow}</div>
+                <h1>{c.heroTitle}</h1>
+                <p>{c.heroBody}</p>
+                <div className="hero-actions">
+                  {siteCustom.buttons.showHeroPrimary !== false && (
+                    <button className="button button--gold" onClick={() => scrollToSection(siteCustom.buttons.heroPrimaryTarget || "work")}>{c.viewWork}<ArrowUpRight size={17} /></button>
+                  )}
+                  {siteCustom.buttons.showHeroSecondary !== false && (
+                    <button className="button button--line" onClick={() => scrollToSection(siteCustom.buttons.heroSecondaryTarget || "contact")}>{c.book}<ArrowDown size={17} /></button>
+                  )}
+                </div>
+                {siteCustom.buttons.showHeroWhatsapp !== false && (
+                  <WhatsAppLink language={language} className="hero-whatsapp" customHref={siteCustom.buttons.heroWhatsappUrl || customWhatsappUrl}>{c.heroWhatsapp}</WhatsAppLink>
+                )}
               </Reveal>
-            ))}
-          </div>
-        </section>
-
-        <section id="why-us" className="manifesto-section">
-          <div className="page-width manifesto-grid">
-            <Reveal><div className="manifesto-numeral">02<span>/</span></div></Reveal>
-            <Reveal delay={80} className="manifesto-copy"><div className="eyebrow"><span className="eyebrow-rule" />{isArabic ? "لماذا تختارنا؟" : "WHY PPFSTUDIO"}</div><h2>{isArabic ? "حماية لا تُرى. دقة لا تُنسى." : "Protection that disappears. Precision that remains."}</h2></Reveal>
-            <Reveal delay={140} className="manifesto-points">
-              {[isArabic ? ["جودة استثنائية", "مواد عالية الجودة ونتائج احترافية."] : ["Exceptional quality", "Premium materials, professionally finished."], isArabic ? ["تركيب احترافي", "عناية دقيقة بكل تفصيلة أثناء التركيب."] : ["Professional installation", "Measured care in every step of the install."], isArabic ? ["حماية غير مرئية", "حماية قوية مع الحفاظ على المظهر الأصلي."] : ["Invisible protection", "Strong protection without changing the original look."]].map(([title, body]) => <div className="manifesto-point" key={title}><Check size={16} /><div><strong>{title}</strong><span>{body}</span></div></div>)}
-            </Reveal>
-          </div>
-        </section>
-
-        <section id="work" className="section work-section page-width">
-          <Reveal><SectionHeader eyebrow={c.workEyebrow} title={c.workTitle} body={c.workBody} /></Reveal>
-          <Reveal delay={80} className="filter-row" aria-label="Portfolio filters">
-            {c.filters.map((filter, index) => <button key={filter} className={activeFilter === index ? "active" : ""} onClick={() => setActiveFilter(index)}>{filter}</button>)}
-          </Reveal>
-          <div className="gallery-grid">
-            {filteredGallery.map((item, index) => {
-              const originalIndex = localizedGalleryItems.findIndex((galleryItem) => galleryItem.id === item.id);
-              return <Fragment key={item.id}><Reveal delay={index * 55} className={`gallery-card gallery-card--${item.id}`}><button onClick={() => setLightboxIndex(originalIndex)} aria-label={`${c.openImage}: ${item.alt}`}><img src={item.src} alt={item.alt} loading="lazy" decoding="async" sizes="(max-width: 720px) 100vw, 50vw" /><span className="gallery-shade" /><span className="gallery-meta"><span>0{item.id}</span><strong>{c.galleryLabels[localizedGalleryItems.findIndex((galleryItem) => galleryItem.id === item.id)]}</strong><ArrowUpRight size={18} /></span></button></Reveal></Fragment>;
-            })}
-          </div>
-        </section>
-
-        <section id="before-after" className="section comparison-section page-width">
-          <div className="comparison-copy">
-            <Reveal><SectionHeader eyebrow={c.beforeEyebrow} title={c.beforeTitle} body={c.beforeBody} /></Reveal>
-            <Reveal delay={100} className="comparison-instruction"><MoveHorizontal size={20} /><span>{isArabic ? "اسحب للمقارنة" : "Drag to compare"}</span></Reveal>
-            <Reveal delay={140} className="comparison-presets" aria-label={isArabic ? "نسبة المقارنة" : "Comparison view presets"}>
-              <button type="button" className={comparison >= 85 ? "active" : ""} onClick={() => setComparison(92)}>
-                {isArabic ? "قبل الحماية" : "Before (Unprotected)"}
-              </button>
-              <button type="button" className={comparison > 15 && comparison < 85 ? "active" : ""} onClick={() => setComparison(50)}>
-                {isArabic ? "مقارنة 50/50" : "50 / 50 Split"}
-              </button>
-              <button type="button" className={comparison <= 15 ? "active" : ""} onClick={() => setComparison(8)}>
-                {isArabic ? "بعد PPF" : "After (PPF Gloss)"}
-              </button>
-            </Reveal>
-          </div>
-          <Reveal delay={100} className="comparison-frame">
-            <div className="comparison-stage" dir="ltr">
-              <img src={images.secondaryDetail} alt={c.afterLabel} className="comparison-image comparison-image--after" loading="lazy" decoding="async" />
-              <div className="comparison-after-sheen" aria-hidden="true" />
-              <div className="comparison-before" style={{ clipPath: `inset(0 ${100 - comparison}% 0 0)` }}>
-                <img src={images.detailSuv} alt={c.beforeLabel} className="comparison-image comparison-image--before" loading="lazy" decoding="async" />
+              <div className="hero-side-note">
+                <span>01</span><span className="hero-side-rule" /><span>{extraTexts.heroSideNote}</span>
               </div>
-              <div className="comparison-divider" style={{ left: `${comparison}%` }}>
-                <span aria-hidden="true" />
-              </div>
-              <span className="comparison-label comparison-label--before">
-                <strong>{c.beforeLabel}</strong>
-                <small>{isArabic ? "طلاء باهت وخدوش سطحية" : "Dull & swirl-marked"}</small>
-              </span>
-              <span className="comparison-label comparison-label--after">
-                <strong>{c.afterLabel}</strong>
-                <small>{isArabic ? "حماية PPF ولمعان عميق" : "Deep PPF mirror gloss"}</small>
-              </span>
-              <input className="comparison-input" type="range" min="0" max="100" value={comparison} onChange={(event) => setComparison(Number(event.target.value))} aria-label={c.beforeTitle} />
             </div>
-          </Reveal>
-        </section>
+            <button className="scroll-cue" onClick={() => scrollToSection("services")} aria-label={c.scroll}><span>{c.scroll}</span><ChevronDown size={17} /></button>
+          </section>
+        )}
 
-        <section className="section video-section">
-          <div className="page-width"><Reveal><SectionHeader eyebrow={c.videoEyebrow} title={c.videoTitle} body={c.videoBody} /></Reveal><div className="video-grid">{videoDisplayItems.map((item, index) => <Fragment key={`${item.title}-${index}`}><Reveal delay={index * 55} className="video-card"><button onClick={() => setVideoIndex(index)} aria-label={`${c.playVideo}: ${item.title}`}><img src={item.poster} alt="" loading="lazy" decoding="async" sizes="(max-width: 720px) 100vw, 50vw" /><span className="video-shade" /><span className="video-play"><CirclePlay size={42} strokeWidth={1.2} /></span><span className="video-label"><span>0{index + 1}</span>{item.title}</span></button></Reveal></Fragment>)}</div></div>
-        </section>
+        {siteCustom.sections.services && (
+          <section id="services" className="section services-section page-width">
+            <div className="section-intro split-intro">
+              <Reveal><SectionHeader eyebrow={c.servicesEyebrow} title={c.servicesTitle} body={c.servicesBody} /></Reveal>
+              <Reveal delay={80} className="section-aside-note"><span>PPF / 2026</span><p>{extraTexts.servicesAsideQuote}</p></Reveal>
+            </div>
+            <Reveal delay={120}><div className="section-label-row"><h3>{c.servicesHeading}</h3><span>{extraTexts.servicesCountLabel}</span></div></Reveal>
+            <div className="services-grid">
+              {c.services.map(([title, body, number], index) => (
+                <Reveal key={number || index} delay={index * 45} className="service-card">
+                  <div className="service-topline"><span>{number}</span><ArrowUpRight size={18} /></div>
+                  <div className="service-icon">{index === 0 ? <ShieldCheck /> : index === 1 ? <Sparkles /> : index === 2 ? <Ruler /> : index === 3 ? <Droplets /> : index === 4 ? <SunMedium /> : <Plus />}</div>
+                  <h3>{title}</h3>
+                  <p>{body}</p>
+                  <span className="service-underline" />
+                </Reveal>
+              ))}
+            </div>
+          </section>
+        )}
 
-        <section id="process" className="section process-section page-width">
-          <Reveal><SectionHeader eyebrow={c.processEyebrow} title={c.processTitle} body={c.processBody} /></Reveal>
-          <div className="process-list">{c.process.map(([title, body], index) => <Reveal key={title} delay={index * 50} className="process-row"><div className="process-number">0{index + 1}</div><div className="process-line" /><div className="process-copy"><h3>{title}</h3><p>{body}</p></div><ArrowUpRight size={20} className="process-arrow" /></Reveal>)}</div>
-        </section>
+        {siteCustom.sections.manifesto && (
+          <section id="why-us" className="manifesto-section">
+            <div className="page-width manifesto-grid">
+              <Reveal><div className="manifesto-numeral">02<span>/</span></div></Reveal>
+              <Reveal delay={80} className="manifesto-copy"><div className="eyebrow"><span className="eyebrow-rule" />{extraTexts.manifestoEyebrow}</div><h2>{extraTexts.manifestoTitle}</h2></Reveal>
+              <Reveal delay={140} className="manifesto-points">
+                {extraTexts.manifestoPoints.map(([title, body], idx) => <div className="manifesto-point" key={`${title}-${idx}`}><Check size={16} /><div><strong>{title}</strong><span>{body}</span></div></div>)}
+              </Reveal>
+            </div>
+          </section>
+        )}
 
-        <section id="about" className="quality-section">
-          <div className="quality-image-wrap"><img src={images.installation} alt="Precision PPF installation in a controlled studio" loading="lazy" decoding="async" /><div className="quality-image-caption"><span>07</span><span>{isArabic ? "المواد / التركيب" : "MATERIAL / INSTALL"}</span></div></div>
-          <div className="quality-content"><Reveal><SectionHeader eyebrow={c.qualityEyebrow} title={c.qualityTitle} body={c.qualityBody} /></Reveal><Reveal delay={100} className="quality-list">{c.qualityFeatures.map((feature, index) => <div className="quality-item" key={feature}><span>0{index + 1}</span><Check size={16} /><strong>{feature}</strong></div>)}</Reveal><Reveal delay={180}><button className="text-link" onClick={() => scrollToSection("contact")}>{isArabic ? "تحدث مع فريقنا" : "Talk to our team"}<ArrowUpRight size={16} /></button></Reveal></div>
-        </section>
+        {siteCustom.sections.work && (
+          <section id="work" className="section work-section page-width">
+            <Reveal><SectionHeader eyebrow={c.workEyebrow} title={c.workTitle} body={c.workBody} /></Reveal>
+            <Reveal delay={80} className="filter-row" aria-label="Portfolio filters">
+              {c.filters.map((filter, index) => <button key={`${filter}-${index}`} className={activeFilter === index ? "active" : ""} onClick={() => setActiveFilter(index)}>{filter}</button>)}
+            </Reveal>
+            <div className="gallery-grid">
+              {filteredGallery.map((item, index) => {
+                const originalIndex = localizedGalleryItems.findIndex((galleryItem) => galleryItem.id === item.id);
+                const labelText = c.galleryLabels[originalIndex] || item.alt;
+                return <Fragment key={item.id}><Reveal delay={index * 55} className={`gallery-card gallery-card--${item.id}`}><button onClick={() => setLightboxIndex(originalIndex)} aria-label={`${c.openImage}: ${item.alt}`}><img src={item.src} alt={item.alt} loading="lazy" decoding="async" sizes="(max-width: 720px) 100vw, 50vw" /><span className="gallery-shade" /><span className="gallery-meta"><span>0{item.id}</span><strong>{labelText}</strong><ArrowUpRight size={18} /></span></button></Reveal></Fragment>;
+              })}
+            </div>
+          </section>
+        )}
 
-        <section ref={statsRef} className="stats-section page-width" aria-label={isArabic ? "إحصائيات" : "Statistics"}><div className="stats-grid">{c.stats.map(([value, label]) => <CraftStandard key={label} value={value} label={label} active={statsActive} />)}</div></section>
+        {siteCustom.sections.beforeAfter && (
+          <section id="before-after" className="section comparison-section page-width">
+            <div className="comparison-copy">
+              <Reveal><SectionHeader eyebrow={c.beforeEyebrow} title={c.beforeTitle} body={c.beforeBody} /></Reveal>
+              <Reveal delay={100} className="comparison-instruction"><MoveHorizontal size={20} /><span>{extraTexts.dragToCompare}</span></Reveal>
+              <Reveal delay={140} className="comparison-presets" aria-label={isArabic ? "نسبة المقارنة" : "Comparison view presets"}>
+                <button type="button" className={comparison >= 85 ? "active" : ""} onClick={() => setComparison(92)}>
+                  {isArabic ? (siteCustom.buttons.beforePreset1Ar || "قبل الحماية") : (siteCustom.buttons.beforePreset1En || "Before (Unprotected)")}
+                </button>
+                <button type="button" className={comparison > 15 && comparison < 85 ? "active" : ""} onClick={() => setComparison(50)}>
+                  {isArabic ? (siteCustom.buttons.beforePreset2Ar || "مقارنة 50/50") : (siteCustom.buttons.beforePreset2En || "50 / 50 Split")}
+                </button>
+                <button type="button" className={comparison <= 15 ? "active" : ""} onClick={() => setComparison(8)}>
+                  {isArabic ? (siteCustom.buttons.beforePreset3Ar || "بعد PPF") : (siteCustom.buttons.beforePreset3En || "After (PPF Gloss)")}
+                </button>
+              </Reveal>
+            </div>
+            <Reveal delay={100} className="comparison-frame">
+              <div className="comparison-stage" dir="ltr">
+                <img src={siteCustom.media.afterImage || images.secondaryDetail} alt={c.afterLabel} className="comparison-image comparison-image--after" loading="lazy" decoding="async" />
+                <div className="comparison-after-sheen" aria-hidden="true" />
+                <div className="comparison-before" style={{ clipPath: `inset(0 ${100 - comparison}% 0 0)` }}>
+                  <img src={siteCustom.media.beforeImage || images.detailSuv} alt={c.beforeLabel} className="comparison-image comparison-image--before" loading="lazy" decoding="async" />
+                </div>
+                <div className="comparison-divider" style={{ left: `${comparison}%` }}>
+                  <span aria-hidden="true" />
+                </div>
+                <span className="comparison-label comparison-label--before">
+                  <strong>{c.beforeLabel}</strong>
+                  <small>{extraTexts.beforeSubLabel}</small>
+                </span>
+                <span className="comparison-label comparison-label--after">
+                  <strong>{c.afterLabel}</strong>
+                  <small>{extraTexts.afterSubLabel}</small>
+                </span>
+                <input className="comparison-input" type="range" min="0" max="100" value={comparison} onChange={(event) => setComparison(Number(event.target.value))} aria-label={c.beforeTitle} />
+              </div>
+            </Reveal>
+          </section>
+        )}
 
-        <section className="section testimonials-section page-width">
-          <div className="reviews-heading-row"><Reveal><SectionHeader eyebrow={c.testimonialsEyebrow} title={c.testimonialsTitle} /></Reveal><Reveal delay={80} className="reviews-actions"><button className="review-count-button" onClick={() => setReviewsOpen(true)} aria-label={c.reviewOpen}><strong>{reviewsQuery.data?.total ?? 0}</strong><span>{c.reviewCountLabel}</span><ArrowUpRight size={17} /></button><button className="button button--line review-submit-button" onClick={() => setReviewFormOpen(true)}><Plus size={16} />{c.reviewFormSubmit}</button></Reveal></div>
-          <p className="review-moderation-note">{c.reviewModeratedNote}</p>
-          {reviewSubmittedNotice && <p className="review-submission-notice" aria-live="polite">{getReviewSubmissionNotice(language)}</p>}
-          {reviewReference && <div className="review-reference-card"><div><span className="review-reference-label">{c.reviewReferenceLabel}</span><code>{reviewReference}</code></div><button type="button" className="button button--line" onClick={copyReviewReference}><Copy size={15} />{referenceCopied ? c.reviewReferenceCopied : c.reviewReferenceCopy}</button></div>}
-          <div className="review-tracker"><div><h3>{c.reviewTrackTitle}</h3><p>{c.reviewTrackBody}</p></div><form onSubmit={handleTrackReview}><label className="sr-only" htmlFor="review-reference-input">{c.reviewReferenceLabel}</label><input id="review-reference-input" value={trackingInput} onChange={(event) => setTrackingInput(event.target.value.toUpperCase())} placeholder={c.reviewReferencePlaceholder} maxLength={16} autoComplete="off" /><button className="button button--gold" type="submit">{c.reviewTrackSubmit}</button></form>{trackingReference && reviewStatusQuery.isLoading && <p className="review-tracker-result">{c.reviewTrackLoading}</p>}{trackingReference && !reviewStatusQuery.isLoading && reviewStatusQuery.data && <div className="review-tracker-result"><strong className={`review-status review-status--${reviewStatusQuery.data.status}`}>{getReviewStatusLabel(reviewStatusQuery.data.status, c)}</strong><span>{c.reviewTrackDate}: {new Date(reviewStatusQuery.data.createdAt).toLocaleDateString(c.locale)}</span></div>}{trackingReference && !reviewStatusQuery.isLoading && !reviewStatusQuery.data && <p className="review-tracker-result review-tracker-result--error">{c.reviewTrackNotFound}</p>}</div>
-          {reviewsQuery.isLoading ? <div className="review-empty-state">{isArabic ? "جارٍ تحميل المراجعات..." : "Loading approved reviews..."}</div> : <div className="testimonial-grid">{(reviewsQuery.data?.items ?? []).slice(0, 3).map((review, index) => <Reveal key={review.id} delay={index * 65} className="testimonial-card"><div className="testimonial-top"><div className="stars">{[0, 1, 2, 3, 4].map((star) => <Star key={star} size={13} fill={star < review.rating ? "currentColor" : "none"} />)}</div><span>{review.rating}.0</span></div><p>“{getLocalizedReviewText(review, language)}”</p><div className="testimonial-person"><span className="testimonial-avatar">{review.name.charAt(0).toUpperCase()}</span><span><strong>{review.name}</strong><small>{review.vehicle || (isArabic ? "عميل" : "Client")}</small></span></div></Reveal>)}</div>}
-          {!reviewsQuery.isLoading && (reviewsQuery.data?.items.length ?? 0) === 0 && <div className="review-empty-state">{c.reviewEmpty}</div>}
-        </section>
+        {siteCustom.sections.videos && (
+          <section className="section video-section">
+            <div className="page-width"><Reveal><SectionHeader eyebrow={c.videoEyebrow} title={c.videoTitle} body={c.videoBody} /></Reveal><div className="video-grid">{videoDisplayItems.map((item, index) => <Fragment key={`${item.title}-${index}`}><Reveal delay={index * 55} className="video-card"><button onClick={() => setVideoIndex(index)} aria-label={`${c.playVideo}: ${item.title}`}><img src={item.poster} alt="" loading="lazy" decoding="async" sizes="(max-width: 720px) 100vw, 50vw" /><span className="video-shade" /><span className="video-play"><CirclePlay size={42} strokeWidth={1.2} /></span><span className="video-label"><span>0{index + 1}</span>{item.title}</span></button></Reveal></Fragment>)}</div></div>
+          </section>
+        )}
+
+        {siteCustom.sections.process && (
+          <section id="process" className="section process-section page-width">
+            <Reveal><SectionHeader eyebrow={c.processEyebrow} title={c.processTitle} body={c.processBody} /></Reveal>
+            <div className="process-list">{c.process.map(([title, body], index) => <Reveal key={`${title}-${index}`} delay={index * 50} className="process-row"><div className="process-number">0{index + 1}</div><div className="process-line" /><div className="process-copy"><h3>{title}</h3><p>{body}</p></div><ArrowUpRight size={20} className="process-arrow" /></Reveal>)}</div>
+          </section>
+        )}
+
+        {siteCustom.sections.quality && (
+          <section id="about" className="quality-section">
+            <div className="quality-image-wrap"><img src={siteCustom.media.qualityImage || images.installation} alt="Precision PPF installation in a controlled studio" loading="lazy" decoding="async" /><div className="quality-image-caption"><span>07</span><span>{extraTexts.materialInstallCaption}</span></div></div>
+            <div className="quality-content"><Reveal><SectionHeader eyebrow={c.qualityEyebrow} title={c.qualityTitle} body={c.qualityBody} /></Reveal><Reveal delay={100} className="quality-list">{c.qualityFeatures.map((feature, index) => <div className="quality-item" key={`${feature}-${index}`}><span>0{index + 1}</span><Check size={16} /><strong>{feature}</strong></div>)}</Reveal><Reveal delay={180}><button className="text-link" onClick={() => scrollToSection(siteCustom.buttons.qualityCtaTarget || "contact")}>{isArabic ? (siteCustom.buttons.qualityCtaTextAr || "تحدث مع فريقنا") : (siteCustom.buttons.qualityCtaTextEn || "Talk to our team")}<ArrowUpRight size={16} /></button></Reveal></div>
+          </section>
+        )}
+
+        {siteCustom.sections.stats && (
+          <section ref={statsRef} className="stats-section page-width" aria-label={isArabic ? "إحصائيات" : "Statistics"}><div className="stats-grid">{c.stats.map(([value, label], idx) => <CraftStandard key={`${label}-${idx}`} value={value} label={label} active={statsActive} />)}</div></section>
+        )}
+
+        {siteCustom.sections.reviews && (
+          <section className="section testimonials-section page-width">
+            <div className="reviews-heading-row"><Reveal><SectionHeader eyebrow={c.testimonialsEyebrow} title={c.testimonialsTitle} /></Reveal><Reveal delay={80} className="reviews-actions"><button className="review-count-button" onClick={() => setReviewsOpen(true)} aria-label={c.reviewOpen}><strong>{reviewsQuery.data?.total ?? 0}</strong><span>{c.reviewCountLabel}</span><ArrowUpRight size={17} /></button><button className="button button--line review-submit-button" onClick={() => setReviewFormOpen(true)}><Plus size={16} />{c.reviewFormSubmit}</button></Reveal></div>
+            <p className="review-moderation-note">{c.reviewModeratedNote}</p>
+            {reviewSubmittedNotice && <p className="review-submission-notice" aria-live="polite">{getReviewSubmissionNotice(language)}</p>}
+            {reviewReference && <div className="review-reference-card"><div><span className="review-reference-label">{c.reviewReferenceLabel}</span><code>{reviewReference}</code></div><button type="button" className="button button--line" onClick={copyReviewReference}><Copy size={15} />{referenceCopied ? c.reviewReferenceCopied : c.reviewReferenceCopy}</button></div>}
+            <div className="review-tracker"><div><h3>{c.reviewTrackTitle}</h3><p>{c.reviewTrackBody}</p></div><form onSubmit={handleTrackReview}><label className="sr-only" htmlFor="review-reference-input">{c.reviewReferenceLabel}</label><input id="review-reference-input" value={trackingInput} onChange={(event) => setTrackingInput(event.target.value.toUpperCase())} placeholder={c.reviewReferencePlaceholder} maxLength={16} autoComplete="off" /><button className="button button--gold" type="submit">{c.reviewTrackSubmit}</button></form>{trackingReference && reviewStatusQuery.isLoading && <p className="review-tracker-result">{c.reviewTrackLoading}</p>}{trackingReference && !reviewStatusQuery.isLoading && reviewStatusQuery.data && <div className="review-tracker-result"><strong className={`review-status review-status--${reviewStatusQuery.data.status}`}>{getReviewStatusLabel(reviewStatusQuery.data.status, c)}</strong><span>{c.reviewTrackDate}: {new Date(reviewStatusQuery.data.createdAt).toLocaleDateString(c.locale)}</span></div>}{trackingReference && !reviewStatusQuery.isLoading && !reviewStatusQuery.data && <p className="review-tracker-result review-tracker-result--error">{c.reviewTrackNotFound}</p>}</div>
+            {reviewsQuery.isLoading ? <div className="review-empty-state">{isArabic ? "جارٍ تحميل المراجعات..." : "Loading approved reviews..."}</div> : <div className="testimonial-grid">{(reviewsQuery.data?.items ?? []).slice(0, 3).map((review, index) => <Reveal key={review.id} delay={index * 65} className="testimonial-card"><div className="testimonial-top"><div className="stars">{[0, 1, 2, 3, 4].map((star) => <Star key={star} size={13} fill={star < review.rating ? "currentColor" : "none"} />)}</div><span>{review.rating}.0</span></div><p>“{getLocalizedReviewText(review, language)}”</p><div className="testimonial-person"><span className="testimonial-avatar">{review.name.charAt(0).toUpperCase()}</span><span><strong>{review.name}</strong><small>{review.vehicle || (isArabic ? "عميل" : "Client")}</small></span></div></Reveal>)}</div>}
+            {!reviewsQuery.isLoading && (reviewsQuery.data?.items.length ?? 0) === 0 && <div className="review-empty-state">{c.reviewEmpty}</div>}
+          </section>
+        )}
 
         {user?.role === "admin" && <section className="admin-review-panel page-width"><div className="admin-review-heading"><span className="eyebrow"><span className="eyebrow-rule" />{c.reviewModerationTitle}</span><span>{pendingReviewsQuery.data?.length ?? 0}</span></div>{(pendingReviewsQuery.data ?? []).map((review) => <article className="admin-review-item" key={review.id}><div><strong>{review.name}</strong><small>{review.vehicle || (isArabic ? "عميل" : "Client")} · {review.rating}/5</small><p>{getLocalizedReviewText(review, language)}</p></div><div className="admin-review-actions"><button className="button button--gold" onClick={() => moderateReview.mutate({ id: review.id, status: "approved" })}>{c.reviewApprove}</button><button className="button button--line" onClick={() => moderateReview.mutate({ id: review.id, status: "rejected" })}>{c.reviewReject}</button></div></article>)}{!pendingReviewsQuery.isLoading && (pendingReviewsQuery.data?.length ?? 0) === 0 && <p className="review-empty-state">{c.reviewAdminEmpty}</p>}</section>}
 
-        <section id="contact" className="closing-cta">
-          <div className="closing-image"><img src={images.hero} alt="Luxury vehicle protected with clear PPF" loading="lazy" decoding="async" /><div className="closing-shade" /></div>
-          <div className="closing-content page-width"><Reveal><div className="eyebrow eyebrow--light"><span className="eyebrow-rule" />{c.contactEyebrow}</div><h2>{c.contactTitle}</h2><p>{c.contactBody}</p><WhatsAppLink language={language} className="button button--gold">{c.ctaButton}</WhatsAppLink></Reveal><div className="closing-contact"><span>{c.contactLabel}</span><a href={whatsappHref(language)} target="_blank" rel="noreferrer">{WHATSAPP_DISPLAY}</a></div></div>
-        </section>
+        {siteCustom.sections.closingCta && (
+          <section id="contact" className="closing-cta">
+            <div className="closing-image"><img src={siteCustom.media.closingImage || images.hero} alt="Luxury vehicle protected with clear PPF" loading="lazy" decoding="async" /><div className="closing-shade" /></div>
+            <div className="closing-content page-width"><Reveal><div className="eyebrow eyebrow--light"><span className="eyebrow-rule" />{c.contactEyebrow}</div><h2>{c.contactTitle}</h2><p>{c.contactBody}</p><WhatsAppLink language={language} className="button button--gold" customHref={siteCustom.buttons.closingCtaUrl || customWhatsappUrl}>{c.ctaButton}</WhatsAppLink></Reveal><div className="closing-contact"><span>{c.contactLabel}</span><a href={siteCustom.buttons.closingCtaUrl || customWhatsappUrl || whatsappHref(language)} target="_blank" rel="noreferrer">{siteCustom.brand.whatsappDisplay}</a></div></div>
+          </section>
+        )}
 
-        <section className="home-seo-links page-width" aria-labelledby="home-seo-heading"><div className="eyebrow"><span className="eyebrow-rule" />{language === "ar" ? "خدمات حماية السيارات في السعودية" : "Saudi paint protection services"}</div><h2 id="home-seo-heading">{language === "ar" ? "حماية طلاء السيارات بالرياض وخارجها" : "Paint protection film in Riyadh and Saudi Arabia"}</h2><p>{language === "ar" ? "نقدم تركيب PPF وحماية كاملة للسيارات والعناية بالتفاصيل للسيارات الفاخرة وSUV في الرياض، مع خدمة عملاء متعددة اللغات." : "Explore premium PPF installation, full-body vehicle protection and automotive detailing for luxury cars and SUVs in Riyadh, with multilingual support."}</p><div className="home-seo-link-grid"><Link href={language === "ar" ? "/ar/services/ppf-riyadh" : "/services/ppf-riyadh"}>{language === "ar" ? "تركيب PPF بالرياض" : "PPF Riyadh"}</Link><Link href={language === "ar" ? "/ar/services/full-body-ppf" : "/services/full-body-ppf"}>{language === "ar" ? "حماية السيارة بالكامل" : "Full-body PPF"}</Link><Link href="/services/auto-detailing-ppf">{language === "ar" ? "العناية بالسيارات وحماية الطلاء" : "Auto Detailing & PPF"}</Link><Link href={language === "ar" ? "/ar/blog/ppf-riyadh-guide" : "/blog/ppf-riyadh-guide"}>{language === "ar" ? "دليل حماية السيارات بالرياض" : "Riyadh PPF Guide"}</Link><Link href={language === "ar" ? "/ar/blog/ppf-price-saudi-arabia" : "/blog/ppf-price-saudi-arabia"}>{language === "ar" ? "أسعار PPF في السعودية" : "PPF price guide Saudi Arabia"}</Link><Link href="/blog/luxury-car-ppf">{language === "ar" ? "حماية السيارات الفاخرة" : "Luxury Car PPF Guide"}</Link></div></section>
+        {siteCustom.sections.seoGuides && (
+          <section className="home-seo-links page-width" aria-labelledby="home-seo-heading">
+            <div className="eyebrow"><span className="eyebrow-rule" />{extraTexts.seoSectionEyebrow}</div>
+            <h2 id="home-seo-heading">{extraTexts.seoSectionTitle}</h2>
+            <p>{extraTexts.seoSectionBody}</p>
+            <div className="home-seo-link-grid">
+              {seoButtons.map((btn, index) => (
+                <Link key={index} href={language === "ar" ? btn.hrefAr : btn.hrefEn}>
+                  {language === "ar" ? btn.labelAr : btn.labelEn}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
 
-      <footer className="site-footer"><div className="page-width footer-grid"><div><BrandMark /><p>{c.footerDescription}</p></div><div className="footer-column"><span className="footer-label">{c.footerLinks}</span>{c.nav.slice(0, 5).map(([label, id]) => <button key={id} onClick={() => scrollToSection(id)}>{label}</button>)}<Link className="footer-legal-link" href="/privacy">{language === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}</Link><Link className="footer-legal-link" href="/terms">{language === "ar" ? "الشروط والأحكام" : "Terms of Service"}</Link><Link className="footer-legal-link" href="/contact">{language === "ar" ? "التواصل" : "Contact"}</Link></div><div className="footer-column"><span className="footer-label">{c.footerContact}</span><WhatsAppLink language={language}>{WHATSAPP_DISPLAY}</WhatsAppLink><div className="social-links" aria-label="PPFStudio social profiles"><a className="social-link" href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on Instagram"><Instagram size={16} /> <span>Instagram</span></a><a className="social-link" href={SNAPCHAT_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on Snapchat"><Ghost size={16} /> <span>Snapchat</span></a><a className="social-link" href={TIKTOK_URL} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on TikTok"><Music2 size={16} /> <span>TikTok</span></a><Link className="social-link social-link--admin" href="/admin" aria-label="Open PPFStudio Admin panel"><ShieldCheck size={16} /> <span>Admin</span></Link></div></div></div><div className="page-width footer-bottom"><span>{c.footerCopyright}</span><div className="footer-language-list">{LANGUAGE_OPTIONS.map((opt) => <button key={opt.code} className={language === opt.code ? "active" : ""} onClick={() => selectLanguage(opt.code)}>{opt.label}</button>)}<button onClick={openLanguageModal} className="footer-language-more"><Globe size={12} /> Languages</button></div></div></footer>
+      <footer className="site-footer">
+        <div className="page-width footer-grid">
+          <div>
+            <BrandMark primary={siteCustom.brand.brandPrimary} secondary={siteCustom.brand.brandSecondary} />
+            <p>{c.footerDescription}</p>
+          </div>
+          <div className="footer-column">
+            <span className="footer-label">{c.footerLinks}</span>
+            {c.nav.slice(0, 5).map(([label, id]) => <button key={id} onClick={() => scrollToSection(id)}>{label}</button>)}
+            <Link className="footer-legal-link" href="/privacy">{language === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}</Link>
+            <Link className="footer-legal-link" href="/terms">{language === "ar" ? "الشروط والأحكام" : "Terms of Service"}</Link>
+            <Link className="footer-legal-link" href="/contact">{language === "ar" ? "التواصل" : "Contact"}</Link>
+          </div>
+          <div className="footer-column">
+            <span className="footer-label">{c.footerContact}</span>
+            <WhatsAppLink language={language} customHref={customWhatsappUrl}>{siteCustom.brand.whatsappDisplay}</WhatsAppLink>
+            <div className="social-links" aria-label="PPFStudio social profiles">
+              <a className="social-link" href={siteCustom.brand.instagramUrl} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on Instagram"><Instagram size={16} /> <span>Instagram</span></a>
+              <a className="social-link" href={siteCustom.brand.snapchatUrl} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on Snapchat"><Ghost size={16} /> <span>Snapchat</span></a>
+              <a className="social-link" href={siteCustom.brand.tiktokUrl} target="_blank" rel="noopener noreferrer" aria-label="Open PPFStudio on TikTok"><Music2 size={16} /> <span>TikTok</span></a>
+              <Link className="social-link social-link--admin" href="/admin" aria-label="Open PPFStudio Admin panel"><ShieldCheck size={16} /> <span>Admin</span></Link>
+            </div>
+          </div>
+        </div>
+        <div className="page-width footer-bottom">
+          <span>{c.footerCopyright}</span>
+          <div className="footer-language-bar">
+            {LANGUAGE_OPTIONS.map((opt) => (
+              <button
+                key={opt.code}
+                className={`footer-language-pill ${language === opt.code ? "active" : ""}`}
+                onClick={() => selectLanguage(opt.code)}
+              >
+                {opt.label}
+              </button>
+            ))}
+            <button onClick={openLanguageModal} className="footer-language-pill">
+              <Globe size={12} /> Languages
+            </button>
+          </div>
+        </div>
+      </footer>
 
-      <a href={whatsappHref(language)} target="_blank" rel="noreferrer" className="floating-whatsapp" aria-label={language === "ar" ? "التواصل معنا عبر واتساب" : "Chat with us on WhatsApp"}><MessageCircle size={23} /><span>{c.floatingWhatsapp}</span></a>
+      {siteCustom.sections.floatingWhatsapp && siteCustom.buttons.showFloatingWhatsapp !== false && (
+        <a href={siteCustom.buttons.floatingWhatsappUrl || customWhatsappUrl || whatsappHref(language)} target="_blank" rel="noreferrer" className="floating-whatsapp" aria-label={language === "ar" ? "التواصل معنا عبر واتساب" : "Chat with us on WhatsApp"}><MessageCircle size={23} /><span>{c.floatingWhatsapp}</span></a>
+      )}
 
       <Dialog open={lightboxIndex !== null} onOpenChange={(open) => !open && setLightboxIndex(null)}>
         <DialogContent className="lightbox-dialog"><DialogTitle className="sr-only">{activeLightboxItem?.alt}</DialogTitle><DialogDescription className="sr-only">{c.openImage}</DialogDescription>{activeLightboxItem && <div className="lightbox-inner"><img src={activeLightboxItem.src} alt={activeLightboxItem.alt} /><div className="lightbox-toolbar"><span>{activeLightboxItem.id} / {localizedGalleryItems.length}</span><div><button onClick={() => setLightboxIndex((lightboxIndex! - 1 + localizedGalleryItems.length) % localizedGalleryItems.length)} aria-label={c.previous}><ChevronLeft /></button><button onClick={() => setLightboxIndex((lightboxIndex! + 1) % localizedGalleryItems.length)} aria-label={c.next}><ChevronRight /></button><button onClick={() => setLightboxIndex(null)} aria-label={c.close}><X /></button></div></div></div>}</DialogContent>
@@ -536,7 +683,7 @@ export default function Home() {
         <DialogContent className="review-form-dialog"><DialogTitle>{c.reviewFormTitle}</DialogTitle><DialogDescription>{c.reviewModeratedNote}</DialogDescription><form className="review-form" onSubmit={(event) => { event.preventDefault(); submitReview.mutate({ name: reviewName, vehicle: reviewVehicle || undefined, rating: reviewRating, review: reviewText }); }}><label><span>{c.reviewFormName}</span><input value={reviewName} onChange={(event) => setReviewName(event.target.value)} minLength={2} maxLength={120} required /></label><label><span>{c.reviewFormVehicle}</span><input value={reviewVehicle} onChange={(event) => setReviewVehicle(event.target.value)} maxLength={120} /></label><fieldset><legend>{c.reviewFormRating}</legend><div className="rating-picker">{[1, 2, 3, 4, 5].map((rating) => <button key={rating} type="button" className={rating <= reviewRating ? "active" : ""} onClick={() => setReviewRating(rating)} aria-label={`${rating} / 5`}><Star size={18} fill={rating <= reviewRating ? "currentColor" : "none"} /></button>)}</div></fieldset><label><span>{c.reviewFormText}</span><textarea value={reviewText} onChange={(event) => setReviewText(event.target.value)} minLength={20} maxLength={1000} rows={5} required /></label><button className="button button--gold" type="submit" disabled={submitReview.isPending}>{submitReview.isPending ? (isArabic ? "جارٍ الإرسال..." : "Submitting...") : c.reviewFormSubmit}</button></form></DialogContent>
       </Dialog>
 
-      <Dialog open={!isLoading && showLanguageModal} onOpenChange={(open) => setShowLanguageModal(open)}>
+      <Dialog open={!isLoading && showLanguageModal && siteCustom.sections.languageModalOnFirstVisit} onOpenChange={(open) => setShowLanguageModal(open)}>
         <DialogContent className="language-dialog" showCloseButton={false}>
           <DialogTitle>{c.modalTitle}</DialogTitle>
           <DialogDescription>{c.modalBody}</DialogDescription>
@@ -545,7 +692,7 @@ export default function Home() {
               <button
                 key={opt.code}
                 onClick={() => selectLanguage(opt.code)}
-                className={`language-card ${opt.dir === "rtl" ? "language-card--ar" : ""} ${language === opt.code ? "language-card--active" : ""}`}
+                className={`language-card ${opt.dir === "rtl" ? "language-card--ar" : ""} ${language === opt.code ? "is-active" : ""}`}
               >
                 <span className="language-code">{opt.short}</span>
                 <strong>{opt.label}</strong>

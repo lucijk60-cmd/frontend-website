@@ -1,5 +1,6 @@
 {
-  "name": "frontend-website",
+  "name": "ppf-studio",
+  "displayName": "PPF Studio",
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",

@@ -7,7 +7,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, adminSessionProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { clearAdminSessionCookie, createAdminSession, setAdminSessionCookie, verifyAdminCredentials } from "./adminAuth";
-import { createAdminMedia, createAdminMediaPair, getAdminMedia, getAdminMediaById, getPublishedAdminMedia, updateAdminMedia, updateAdminMediaStatus } from "./db";
+import { createAdminMedia, createAdminMediaPair, deleteAdminMedia, deleteReview, getAdminMedia, getAdminMediaById, getPublishedAdminMedia, getSiteCustomization, saveSiteCustomization, updateAdminMedia, updateAdminMediaStatus } from "./db";
 import { storagePut } from "./storage";
 import { createCallSession, createReview, ensureCallBusiness, getApprovedReviewCount, getApprovedReviews, getCallSessionByCallId, getPendingReviews, getReviewStatusByReference, getVisitorAnalytics, hasDuplicateReview, importPendingReviews, updateCallSession, updateReviewStatus } from "./db";
 import { buildUserProvidedArabicReviewEntries } from "./userProvidedArabicReviews";
@@ -215,6 +215,16 @@ export const appRouter = router({
         id: z.number().int().positive(),
         status: z.enum(["draft", "published"]),
       })).mutation(({ input }) => updateAdminMediaStatus(input.id, input.status)),
+      delete: adminSessionProcedure.input(z.object({
+        id: z.number().int().positive(),
+      })).mutation(({ input }) => deleteAdminMedia(input.id)),
+    }),
+    siteConfig: router({
+      get: publicProcedure.query(() => getSiteCustomization()),
+      save: adminSessionProcedure.input(z.object({
+        config: z.record(z.string(), z.any()),
+      })).mutation(({ input }) => saveSiteCustomization(input.config)),
+      reset: adminSessionProcedure.mutation(() => saveSiteCustomization(null)),
     }),
   }),
 
@@ -301,7 +311,26 @@ export const appRouter = router({
       id: z.number().int().positive(),
       status: z.enum(["approved", "rejected"]),
     })).mutation(({ input, ctx }) => updateReviewStatus(input.id, input.status, ctx.user.id)),
+    delete: adminProcedure.input(z.object({
+      id: z.number().int().positive(),
+    })).mutation(({ input }) => deleteReview(input.id)),
+    createOwnerApproved: adminProcedure.input(z.object({
+      name: z.string().trim().min(2).max(120),
+      vehicle: z.string().trim().max(120).optional(),
+      rating: z.number().int().min(1).max(5).default(5),
+      review: z.string().trim().min(10).max(1000),
+      reviewAr: z.string().trim().max(1000).optional(),
+    })).mutation(async ({ input }) => {
+      const publicReference = `PPF-${randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase()}`;
+      const saved = await createReview({
+        ...input,
+        publicReference,
+        status: "approved",
+      });
+      return { ...saved, publicReference, status: "approved" as const };
+    }),
   }),
 });
 
 export type AppRouter = typeof appRouter;
+

@@ -103,6 +103,7 @@ const memoryStore = {
   callSessions: new Map<string, CallSession>(),
   reviews: [...INITIAL_APPROVED_REVIEWS] as Array<any>,
   adminMedia: [] as Array<AdminMedia>,
+  siteConfig: null as Record<string, any> | null,
   nextId: 100,
 };
 
@@ -134,6 +135,9 @@ function loadPersistedStore() {
         createdAt: new Date(e.createdAt),
       }));
     }
+    if (raw.siteConfig && typeof raw.siteConfig === "object") {
+      memoryStore.siteConfig = raw.siteConfig;
+    }
     if (typeof raw.nextId === "number" && raw.nextId > memoryStore.nextId) {
       memoryStore.nextId = raw.nextId;
     }
@@ -154,6 +158,7 @@ function savePersistedStore() {
           reviews: memoryStore.reviews,
           adminMedia: memoryStore.adminMedia,
           visitorEvents: memoryStore.visitorEvents.slice(-500),
+          siteConfig: memoryStore.siteConfig,
         },
         null,
         2
@@ -664,3 +669,44 @@ export async function updateAdminMediaStatus(id: number, status: "draft" | "publ
   await dbInstance.update(adminMedia).set({ status }).where(eq(adminMedia.id, id));
   return { success: true } as const;
 }
+
+export async function deleteAdminMedia(id: number) {
+  const dbInstance = await getDb();
+  if (!dbInstance) {
+    const idx = memoryStore.adminMedia.findIndex(m => m.id === id);
+    if (idx !== -1) {
+      memoryStore.adminMedia.splice(idx, 1);
+      savePersistedStore();
+    }
+    return { success: true } as const;
+  }
+  await dbInstance.delete(adminMedia).where(eq(adminMedia.id, id));
+  return { success: true } as const;
+}
+
+export async function deleteReview(id: number) {
+  const dbInstance = await getDb();
+  if (!dbInstance) {
+    const idx = memoryStore.reviews.findIndex(r => r.id === id);
+    if (idx !== -1) {
+      memoryStore.reviews.splice(idx, 1);
+      savePersistedStore();
+    }
+    return { success: true } as const;
+  }
+  await dbInstance.delete(reviews).where(eq(reviews.id, id));
+  return { success: true } as const;
+}
+
+export async function getSiteCustomization() {
+  return memoryStore.siteConfig;
+}
+
+export async function saveSiteCustomization(config: Record<string, any> | null) {
+  memoryStore.siteConfig = config
+    ? { ...config, updatedAt: new Date().toISOString() }
+    : null;
+  savePersistedStore();
+  return memoryStore.siteConfig;
+}
+
