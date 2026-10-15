@@ -1,5 +1,5 @@
 {
-  "nextId": 116,
+  "nextId": 119,
   "reviews": [
     {
       "id": 1,
@@ -231,6 +231,34 @@
       "referrer": "https://ais-dev-fjh7xu2hpl32pp4udrkd6d-736681493362.europe-west2.run.app/",
       "id": 115,
       "createdAt": "2026-10-11T06:12:23.511Z"
+    },
+    {
+      "visitorKeyHash": "5e7612b74cee7ca1b3bcd6ecf7b7c062b7904abb7b20eac5207cfb9f3ea98315",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "unknown",
+      "referrer": null,
+      "id": 116,
+      "createdAt": "2026-10-15T13:47:39.144Z"
+    },
+    {
+      "visitorKeyHash": "b132b68b92806b5c4b9df5839fd365f18b188eaebd60740de616f80c84a3bb0a",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://aistudio.google.com/",
+      "id": 117,
+      "createdAt": "2026-10-15T13:49:16.990Z"
+    },
+    {
+      "visitorKeyHash": "b132b68b92806b5c4b9df5839fd365f18b188eaebd60740de616f80c84a3bb0a",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://ais-dev-fjh7xu2hpl32pp4udrkd6d-736681493362.europe-west2.run.app/",
+      "id": 118,
+      "createdAt": "2026-10-15T13:50:01.669Z"
     }
-  ]
+  ],
+  "siteConfig": null
 }

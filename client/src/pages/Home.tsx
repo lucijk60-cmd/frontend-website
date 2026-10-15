@@ -35,6 +35,11 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { selectPublishedMedia, selectVideoSource } from "@/lib/media";
+import {
+  fetchFirestoreAdminMedia,
+  resolveMediaUrl,
+  type FirebaseMediaItem,
+} from "@/lib/firebaseMedia";
 import { getLocalizedReviewText, getReviewSubmissionNotice, normalizeReviewReference } from "@/lib/reviews";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
@@ -191,6 +196,58 @@ export default function Home() {
   const trackingQueryInput = useMemo(() => trackingReference ? { publicReference: trackingReference } : undefined, [trackingReference]);
   const reviewStatusQuery = trpc.reviews.statusByReference.useQuery(trackingQueryInput ?? skipToken);
   const publishedMediaQuery = trpc.admin.media.published.useQuery();
+  const [firestoreMedia, setFirestoreMedia] = useState<FirebaseMediaItem[]>([]);
+  const [resolvedUrls, setResolvedUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let active = true;
+    void fetchFirestoreAdminMedia(true).then((items) => {
+      if (!active) return;
+      setFirestoreMedia(items);
+      for (const it of items) {
+        if (it.url && it.url.startsWith("firestore://")) {
+          void resolveMediaUrl(it.id, it.url, it.mimeType).then((resolved) => {
+            if (active && resolved) {
+              setResolvedUrls((prev) => ({ ...prev, [it.id]: resolved }));
+            }
+          });
+        }
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const allPublishedMedia = useMemo(() => {
+    const list: Array<{ id: number | string; kind: "image" | "video"; language: "en" | "ar" | "shared"; status: "draft" | "published"; url: string; title: string }> = [];
+    const seen = new Set<string>();
+
+    for (const fm of firestoreMedia) {
+      const cleanId = String(fm.id);
+      seen.add(cleanId);
+      list.push({
+        id: cleanId,
+        kind: fm.kind,
+        language: fm.language,
+        status: fm.status,
+        url: resolvedUrls[cleanId] || fm.url,
+        title: fm.title,
+      });
+    }
+
+    if (publishedMediaQuery.data) {
+      for (const sm of publishedMediaQuery.data) {
+        const cleanId = String(sm.id);
+        if (!seen.has(cleanId)) {
+          seen.add(cleanId);
+          list.push(sm);
+        }
+      }
+    }
+
+    return list;
+  }, [firestoreMedia, publishedMediaQuery.data, resolvedUrls]);
   const pendingReviewsQuery = trpc.reviews.pending.useQuery(undefined, { enabled: user?.role === "admin" });
   const moderateReview = trpc.reviews.moderate.useMutation({
     onSuccess: async () => {
@@ -293,17 +350,17 @@ export default function Home() {
 
   const localizedGalleryItems = useMemo(() => {
     const staticItems = getCustomStaticGalleryItems(language, siteCustom);
-    const uploadedItems = selectPublishedMedia(publishedMediaQuery.data ?? [], mediaLanguage, "image")
-      .map((item) => ({ id: 10000 + item.id, category: "Admin Uploads", src: item.url, alt: item.title }));
+    const uploadedItems = selectPublishedMedia(allPublishedMedia as any, mediaLanguage, "image")
+      .map((item, idx) => ({ id: 10000 + idx, category: "Admin Uploads", src: item.url, alt: item.title }));
     return [...staticItems, ...uploadedItems];
-  }, [language, mediaLanguage, publishedMediaQuery.data, siteCustom]);
+  }, [language, mediaLanguage, allPublishedMedia, siteCustom]);
 
   const videoDisplayItems = useMemo(() => {
     const staticVideos = getCustomStaticVideoItems(siteCustom);
-    const uploadedVideos = selectPublishedMedia(publishedMediaQuery.data ?? [], mediaLanguage, "video")
+    const uploadedVideos = selectPublishedMedia(allPublishedMedia as any, mediaLanguage, "video")
       .map((item) => ({ title: item.title, src: item.url, poster: images.galleryCoupe, isUploaded: true }));
     return [...staticVideos, ...uploadedVideos];
-  }, [mediaLanguage, publishedMediaQuery.data, siteCustom]);
+  }, [mediaLanguage, allPublishedMedia, siteCustom]);
 
   const filteredGallery = useMemo(() => {
     if (activeFilter === 0) return localizedGalleryItems;

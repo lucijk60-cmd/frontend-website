@@ -114,6 +114,13 @@
           "minLength": 2,
           "maxLength": 10
         },
+        "pairKey": {
+          "type": "string",
+          "description": "Unique pair key for bilingual items.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
         "title": {
           "type": "string",
           "description": "Display title of the media item.",
@@ -128,9 +135,9 @@
         },
         "url": {
           "type": "string",
-          "description": "Publicly accessible media URL.",
+          "description": "Publicly accessible media URL or data URL.",
           "minLength": 3,
-          "maxLength": 512
+          "maxLength": 1500000
         },
         "mimeType": {
           "type": "string",
@@ -141,6 +148,10 @@
         "sizeBytes": {
           "type": "integer",
           "description": "Size of the media asset in bytes."
+        },
+        "totalChunks": {
+          "type": "integer",
+          "description": "Total chunks count if stored in chunks."
         },
         "status": {
           "type": "string",
@@ -161,6 +172,62 @@
         }
       },
       "required": ["ownerId", "kind", "language", "title", "storageKey", "url", "mimeType", "sizeBytes", "status", "createdAt"]
+    },
+    "MediaChunk": {
+      "title": "MediaChunk",
+      "description": "Binary data chunk for uploaded images and videos.",
+      "type": "object",
+      "properties": {
+        "mediaId": {
+          "type": "string",
+          "description": "ID of parent media.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "chunkIndex": {
+          "type": "integer",
+          "description": "Index of chunk starting from 0."
+        },
+        "data": {
+          "type": "string",
+          "description": "Base64 encoded data segment.",
+          "minLength": 1,
+          "maxLength": 800000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp."
+        }
+      },
+      "required": ["mediaId", "chunkIndex", "data", "createdAt"]
+    },
+    "SiteConfig": {
+      "title": "SiteConfig",
+      "description": "Master site customization JSON document managed by owner.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Owner UID who customized the site.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "configJson": {
+          "type": "string",
+          "description": "Serialized SiteCustomization JSON.",
+          "minLength": 2,
+          "maxLength": 500000
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp."
+        }
+      },
+      "required": ["ownerId", "configJson", "updatedAt"]
     },
     "VisitorEvent": {
       "title": "VisitorEvent",
@@ -267,6 +334,14 @@
     "/adminMedia/{mediaId}": {
       "schema": { "$ref": "#/entities/AdminMedia" },
       "description": "Stores bilingual gallery media assets managed by administrators."
+    },
+    "/adminMedia/{mediaId}/chunks/{chunkId}": {
+      "schema": { "$ref": "#/entities/MediaChunk" },
+      "description": "Stores base64 media chunks for images and videos in Firestore."
+    },
+    "/siteConfig/{configId}": {
+      "schema": { "$ref": "#/entities/SiteConfig" },
+      "description": "Stores master website customization documents managed by the owner."
     },
     "/visitorEvents/{eventId}": {
       "schema": { "$ref": "#/entities/VisitorEvent" },

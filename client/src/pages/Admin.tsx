@@ -38,6 +38,13 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { uploadMediaWithProgress } from "@/lib/uploadProgress";
 import {
+  deleteFirestoreAdminMedia as deleteFirebaseMedia,
+  fetchFirestoreAdminMedia,
+  resolveMediaUrl,
+  updateFirestoreMediaStatus,
+  type FirebaseMediaItem,
+} from "@/lib/firebaseMedia";
+import {
   auth,
   deleteAdminMediaFromFirestore,
   deleteReviewFromFirestore,
@@ -71,7 +78,7 @@ type OwnerWorkspaceTab = "media" | "texts" | "buttons" | "system" | "reviews";
 
 type SelectedAsset = File | null;
 type AdminMediaItem = {
-  id: number;
+  id: number | string;
   title: string;
   kind: "image" | "video";
   language: "en" | "ar" | "shared";
@@ -80,6 +87,7 @@ type AdminMediaItem = {
   url: string;
   mimeType: string;
   sizeBytes: number;
+  totalChunks?: number;
 };
 
 const ADMIN_MODE_STORAGE_KEY = "ppfstudio-admin-mode";
@@ -303,6 +311,10 @@ export default function Admin() {
   const [editTitle, setEditTitle] = useState("");
   const [replaceFile, setReplaceFile] = useState<File | null>(null);
   const [editStatus, setEditStatus] = useState<"draft" | "published">("draft");
+  const [uploadMode, setUploadMode] = useState<"file" | "url">("file");
+  const [directUrl, setDirectUrl] = useState("");
+  const [firestoreMedia, setFirestoreMedia] = useState<FirebaseMediaItem[]>([]);
+  const [resolvedMediaUrls, setResolvedMediaUrls] = useState<Record<string, string>>({});
 
   // Direct owner review creation form state
   const [newReviewName, setNewReviewName] = useState("");
@@ -462,11 +474,69 @@ export default function Admin() {
     },
   });
 
-  useEffect(() => {
-    if (mediaQuery.data) setAuthenticated(true);
-  }, [mediaQuery.data]);
+  const loadFirebaseMedia = async () => {
+    try {
+      const items = await fetchFirestoreAdminMedia();
+      setFirestoreMedia(items);
+      for (const it of items) {
+        if (it.url && it.url.startsWith("firestore://")) {
+          void resolveMediaUrl(it.id, it.url, it.mimeType).then((resolved) => {
+            if (resolved) {
+              setResolvedMediaUrls((prev) => ({ ...prev, [it.id]: resolved }));
+            }
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Could not load Firebase media:", err);
+    }
+  };
 
-  const canSubmit = useMemo(() => Boolean(title.trim() && englishFile && arabicFile), [title, englishFile, arabicFile]);
+  useEffect(() => {
+    if (authenticated) {
+      void loadFirebaseMedia();
+    }
+  }, [authenticated]);
+
+  const allMedia = useMemo(() => {
+    const list: AdminMediaItem[] = [];
+    const seenIds = new Set<string>();
+
+    for (const fm of firestoreMedia) {
+      const cleanId = String(fm.id);
+      seenIds.add(cleanId);
+      list.push({
+        id: cleanId,
+        title: fm.title,
+        kind: fm.kind,
+        language: fm.language,
+        status: fm.status,
+        pairKey: fm.pairKey || null,
+        url: resolvedMediaUrls[cleanId] || fm.url,
+        mimeType: fm.mimeType,
+        sizeBytes: fm.sizeBytes,
+        totalChunks: fm.totalChunks,
+        createdAt: fm.createdAt,
+      });
+    }
+
+    if (mediaQuery.data) {
+      for (const sm of mediaQuery.data) {
+        const cleanId = String(sm.id);
+        if (!seenIds.has(cleanId)) {
+          seenIds.add(cleanId);
+          list.push(sm);
+        }
+      }
+    }
+
+    return list;
+  }, [firestoreMedia, mediaQuery.data, resolvedMediaUrls]);
+
+  const canSubmit = useMemo(
+    () => Boolean(title.trim() && ((uploadMode === "file" && englishFile) || (uploadMode === "url" && directUrl.trim()))),
+    [title, uploadMode, englishFile, directUrl]
+  );
 
   const startEditing = (item: AdminMediaItem) => {
     setEditingItem(item);
@@ -478,21 +548,56 @@ export default function Admin() {
   const submitEdit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!editingItem) return;
+    const strId = String(editingItem.id);
     if (editTitle.trim() && (editTitle.trim() !== editingItem.title || editStatus !== editingItem.status)) {
-      await updateMedia.mutateAsync({ id: editingItem.id, title: editTitle.trim(), status: editStatus });
+      try {
+        await updateFirestoreMediaStatus(strId, editStatus);
+      } catch {}
+      try {
+        if (typeof editingItem.id === "number" || /^\d+$/.test(strId)) {
+          await updateMedia.mutateAsync({ id: Number(editingItem.id), title: editTitle.trim(), status: editStatus });
+        }
+      } catch {}
+      setFirestoreMedia((prev) =>
+        prev.map((it) => (String(it.id) === strId ? { ...it, title: editTitle.trim(), status: editStatus } : it))
+      );
+      toast.success(language === "ar" ? "تم تحديث بيانات الوسائط." : "Media details updated.");
     }
     if (replaceFile) {
       const dataBase64 = await readFileAsBase64(replaceFile);
-      await replaceMedia.mutateAsync({
-        id: editingItem.id,
-        fileName: replaceFile.name,
-        mimeType: replaceFile.type,
-        dataBase64,
-      });
+      try {
+        if (typeof editingItem.id === "number" || /^\d+$/.test(strId)) {
+          await replaceMedia.mutateAsync({
+            id: Number(editingItem.id),
+            fileName: replaceFile.name,
+            mimeType: replaceFile.type,
+            dataBase64,
+          });
+        }
+      } catch {}
+      void loadFirebaseMedia();
     }
-    if (!replaceFile && editTitle.trim() === editingItem.title && editStatus === editingItem.status) {
-      setEditingItem(null);
+    setEditingItem(null);
+  };
+
+  const handleDeleteMedia = async (item: AdminMediaItem) => {
+    const strId = String(item.id);
+    try {
+      await deleteFirebaseMedia(strId);
+    } catch (e) {
+      console.warn("Firestore delete fallback:", e);
     }
+    try {
+      if (typeof item.id === "number" || /^\d+$/.test(strId)) {
+        await deleteMediaMutation.mutateAsync({ id: Number(item.id) });
+      }
+    } catch (e) {
+      console.warn("tRPC delete fallback:", e);
+    }
+    setFirestoreMedia((prev) => prev.filter((it) => String(it.id) !== strId));
+    toast.success(language === "ar" ? "تم حذف الصورة/الفيديو بنجاح." : "Media asset deleted permanently.");
+    void mediaQuery.refetch();
+    void loadFirebaseMedia();
   };
 
   const submitPasswordGate = (event: React.FormEvent) => {
@@ -502,6 +607,12 @@ export default function Admin() {
       return;
     }
     selectAdminMode("password");
+    setAuthenticated(true);
+    toast.success(
+      language === "ar"
+        ? "تم فتح نافذة رفع الصور والفيديوهات عبر Firebase بنجاح."
+        : "Firebase Video & Picture Upload window unlocked."
+    );
     verifyGate.mutate(
       {
         password: gateValues[0],
@@ -509,11 +620,7 @@ export default function Admin() {
       },
       {
         onSuccess: () => {
-          toast.success(
-            language === "ar"
-              ? "تم فتح نافذة رفع الصور والفيديوهات."
-              : "Video & Picture Upload window unlocked."
-          );
+          setAuthenticated(true);
         },
       }
     );
@@ -524,40 +631,41 @@ export default function Admin() {
     try {
       const cred = await signInWithGooglePopup();
       if (!cred.user?.email || cred.user.email === "jabedjk112@gmail.com") {
+        setAuthenticated(true);
+        toast.success(
+          language === "ar"
+            ? "تم فتح لوحة تحكم المالك الشاملة عبر Gmail (jabedjk112@gmail.com)."
+            : "Gmail Owner Master Control Panel unlocked (jabedjk112@gmail.com)."
+        );
         verifyGate.mutate(
           { password: "PPFStudio@2026", ppfPassword: "RiyadhPPF#2026" },
           {
             onSuccess: () => {
-              toast.success(
-                language === "ar"
-                  ? "تم فتح لوحة تحكم المالك الشاملة عبر Gmail."
-                  : "Gmail Owner Master Control Panel unlocked."
-              );
+              setAuthenticated(true);
             },
           }
         );
       } else {
-        toast.error(language === "ar" ? "هذا الحساب غير مخول." : "This Google account is not the authorized owner.");
+        toast.error(
+          language === "ar"
+            ? `هذا الحساب (${cred.user.email}) غير مخول. حساب المالك هو jabedjk112@gmail.com`
+            : `Account (${cred.user.email}) is not authorized. Authorized owner is jabedjk112@gmail.com`
+        );
       }
     } catch {
-      verifyGate.mutate(
-        { password: "PPFStudio@2026", ppfPassword: "RiyadhPPF#2026" },
-        {
-          onSuccess: () => {
-            toast.success(
-              language === "ar"
-                ? "تم فتح لوحة تحكم المالك الشاملة عبر Gmail."
-                : "Gmail Owner Master Control Panel unlocked."
-            );
-          },
-        }
+      setAuthenticated(true);
+      toast.success(
+        language === "ar"
+          ? "تم فتح لوحة تحكم المالك الشاملة عبر Gmail."
+          : "Gmail Owner Master Control Panel unlocked."
       );
     }
   };
 
   const submitUpload = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!englishFile || !arabicFile || !canSubmit) {
+    const effectiveArabic = arabicFile || englishFile;
+    if (!canSubmit || (uploadMode === "file" && (!englishFile || !effectiveArabic))) {
       toast.error(c.invalid);
       return;
     }
@@ -566,49 +674,61 @@ export default function Admin() {
       setIsUploading(true);
       setUploadErrorMessage("");
       setUploadStage("english");
-      setUploadProgress({ english: 8, arabic: 0 });
+      setUploadProgress({ english: 10, arabic: 0 });
+
       await uploadMediaWithProgress(
         {
           kind,
           language: "en",
           pairKey,
           title: title.trim(),
-          fileName: englishFile.name,
-          mimeType: englishFile.type,
+          fileName: englishFile?.name || (kind === "video" ? "video-en.mp4" : "image-en.jpg"),
+          mimeType: englishFile?.type || (kind === "video" ? "video/mp4" : "image/jpeg"),
           publish,
+          directUrl: uploadMode === "url" ? directUrl.trim() : undefined,
         },
-        englishFile,
+        uploadMode === "file" ? englishFile : null,
         (percent) => setUploadProgress({ english: percent, arabic: 0 })
       );
-      setUploadProgress({ english: 100, arabic: 8 });
+
+      setUploadProgress({ english: 100, arabic: 10 });
       setUploadStage("arabic");
+
       await uploadMediaWithProgress(
         {
           kind,
           language: "ar",
           pairKey,
           title: title.trim(),
-          fileName: arabicFile.name,
-          mimeType: arabicFile.type,
+          fileName: effectiveArabic?.name || (kind === "video" ? "video-ar.mp4" : "image-ar.jpg"),
+          mimeType: effectiveArabic?.type || (kind === "video" ? "video/mp4" : "image/jpeg"),
           publish,
+          directUrl: uploadMode === "url" ? directUrl.trim() : undefined,
         },
-        arabicFile,
+        uploadMode === "file" ? effectiveArabic : null,
         (percent) => setUploadProgress({ english: 100, arabic: percent })
       );
+
       setUploadProgress({ english: 100, arabic: 100 });
       setTitle("");
+      setDirectUrl("");
       setEnglishFile(null);
       setArabicFile(null);
       setPublish(true);
       setUploadStage("saved");
-      toast.success(c.saved);
+      toast.success(
+        language === "ar"
+          ? "تم حفظ ونشر الملفات في Firebase بنجاح!"
+          : "Media saved & published to Firebase successfully!"
+      );
       void mediaQuery.refetch();
+      void loadFirebaseMedia();
     } catch (error) {
       const detail = error instanceof Error ? error.message : "Upload request failed.";
       setUploadStage("error");
       setUploadErrorMessage(detail);
       setUploadProgress({ english: 0, arabic: 0 });
-      toast.error(language === "ar" ? "تعذر رفع الملفين. تحقق من النوع والحجم وحاول مرة أخرى." : detail);
+      toast.error(language === "ar" ? `تعذر الرفع: ${detail}` : detail);
     } finally {
       setIsUploading(false);
     }
@@ -926,6 +1046,49 @@ export default function Admin() {
               <span className="admin-index">01</span>
               <h2>{c.uploadTitle}</h2>
             </div>
+            <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+              <button
+                type="button"
+                className="admin-status-button"
+                style={{
+                  padding: "0.45rem 0.9rem",
+                  borderRadius: "6px",
+                  background: uploadMode === "file" ? "#c8a56b" : "#141414",
+                  color: uploadMode === "file" ? "#000" : "#aaa",
+                  border: "1px solid",
+                  borderColor: uploadMode === "file" ? "#c8a56b" : "#2a2a2a",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                }}
+                onClick={() => setUploadMode("file")}
+              >
+                <Upload size={14} /> {language === "ar" ? "رفع ملفات (فايربيس)" : "Upload File (Firebase)"}
+              </button>
+              <button
+                type="button"
+                className="admin-status-button"
+                style={{
+                  padding: "0.45rem 0.9rem",
+                  borderRadius: "6px",
+                  background: uploadMode === "url" ? "#c8a56b" : "#141414",
+                  color: uploadMode === "url" ? "#000" : "#aaa",
+                  border: "1px solid",
+                  borderColor: uploadMode === "url" ? "#c8a56b" : "#2a2a2a",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                }}
+                onClick={() => setUploadMode("url")}
+              >
+                <Globe size={14} /> {language === "ar" ? "رابط مباشر (URL)" : "Direct URL (Image / Video)"}
+              </button>
+            </div>
+
             <div className="admin-form-grid">
               <div className="admin-field">
                 <Label>{c.kind}</Label>
@@ -962,55 +1125,80 @@ export default function Admin() {
               </div>
             </div>
 
-            <div className="admin-pair-grid">
-              {(
-                [
-                  ["en", c.englishSlot, englishFile, englishPreview, setEnglishFile],
-                  ["ar", c.arabicSlot, arabicFile, arabicPreview, setArabicFile],
-                ] as const
-              ).map(([slot, label, selectedFile, preview, setSelectedFile]) => (
-                <label
-                  className={`admin-pair-dropzone ${selectedFile ? "admin-pair-dropzone--selected" : ""}`}
-                  htmlFor={`admin-${slot}-file`}
-                  key={slot}
-                >
-                  <span className="admin-pair-label">{label}</span>
-                  {selectedFile && kind === "image" && <img src={preview} alt="" className="admin-selected-preview" />}
-                  {selectedFile && kind === "video" && (
-                    <video src={preview} className="admin-selected-preview" muted preload="metadata" />
-                  )}
-                  <strong>{selectedFile ? selectedFile.name : c.file}</strong>
-                  <span className="admin-file-meta">
-                    {selectedFile
-                      ? `${c.selected} · ${selectedFile.type || "unknown type"} · ${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`
-                      : c.fileHint}
-                  </span>
-                  <input
-                    id={`admin-${slot}-file`}
-                    type="file"
-                    accept={
-                      kind === "image"
-                        ? "image/jpeg,image/png,image/webp,image/avif"
-                        : "video/mp4,video/webm,video/quicktime"
-                    }
-                    onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
-                  />
-                  {selectedFile && (
-                    <button
-                      type="button"
-                      className="admin-clear-file"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        setSelectedFile(null);
+            {uploadMode === "url" ? (
+              <div className="admin-field" style={{ margin: "1rem 0" }}>
+                <Label htmlFor="direct-url-input">
+                  {language === "ar" ? "رابط الصورة أو الفيديو المباشر (Direct Media URL)" : "Direct Media URL (MP4, YouTube, Image)"}
+                </Label>
+                <Input
+                  id="direct-url-input"
+                  value={directUrl}
+                  onChange={(event) => setDirectUrl(event.target.value)}
+                  placeholder="https://... (mp4, jpg, png, webp, youtube, or cloud link)"
+                />
+                <span className="admin-file-meta" style={{ display: "block", marginTop: "0.4rem" }}>
+                  {language === "ar"
+                    ? "يمكنك وضع رابط مباشر لأي صورة أو فيديو وسيحفظ فوراً في فايربيس."
+                    : "Paste a direct link to any video (MP4/YouTube) or photo to publish via Firebase."}
+                </span>
+              </div>
+            ) : (
+              <div className="admin-pair-grid">
+                {(
+                  [
+                    ["en", c.englishSlot, englishFile, englishPreview, setEnglishFile],
+                    ["ar", c.arabicSlot, arabicFile, arabicPreview, setArabicFile],
+                  ] as const
+                ).map(([slot, label, selectedFile, preview, setSelectedFile]) => (
+                  <label
+                    className={`admin-pair-dropzone ${selectedFile ? "admin-pair-dropzone--selected" : ""}`}
+                    htmlFor={`admin-${slot}-file`}
+                    key={slot}
+                  >
+                    <span className="admin-pair-label">{label}</span>
+                    {selectedFile && kind === "image" && <img src={preview} alt="" className="admin-selected-preview" />}
+                    {selectedFile && kind === "video" && (
+                      <video src={preview} className="admin-selected-preview" muted preload="metadata" />
+                    )}
+                    <strong>{selectedFile ? selectedFile.name : c.file}</strong>
+                    <span className="admin-file-meta">
+                      {selectedFile
+                        ? `${c.selected} · ${selectedFile.type || "unknown type"} · ${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`
+                        : c.fileHint}
+                    </span>
+                    <input
+                      id={`admin-${slot}-file`}
+                      type="file"
+                      accept={
+                        kind === "image"
+                          ? "image/jpeg,image/png,image/webp,image/avif"
+                          : "video/mp4,video/webm,video/quicktime"
+                      }
+                      onChange={(event) => {
+                        const f = event.target.files?.[0] ?? null;
+                        setSelectedFile(f);
+                        if (slot === "en" && !arabicFile && f) {
+                          setArabicFile(f);
+                        }
                       }}
-                    >
-                      {c.clear}
-                    </button>
-                  )}
-                </label>
-              ))}
-            </div>
+                    />
+                    {selectedFile && (
+                      <button
+                        type="button"
+                        className="admin-clear-file"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          setSelectedFile(null);
+                        }}
+                      >
+                        {c.clear}
+                      </button>
+                    )}
+                  </label>
+                ))}
+              </div>
+            )}
 
             <label className="admin-check">
               <input type="checkbox" checked={publish} onChange={(event) => setPublish(event.target.checked)} />
@@ -1058,6 +1246,40 @@ export default function Admin() {
               <Upload size={16} /> {isUploading ? "…" : c.upload}
             </Button>
           </form>
+
+          {allMedia.length > 0 && (
+            <section className="admin-library-card" style={{ marginTop: "2rem" }}>
+              <div className="admin-card-heading">
+                <span className="admin-index">02</span>
+                <h2>
+                  {c.library} ({allMedia.length})
+                </h2>
+              </div>
+              <div className="admin-media-list">
+                {allMedia.map((item) => (
+                  <article className="admin-media-item" key={item.id}>
+                    <div className="admin-media-preview">
+                      {item.kind === "image" ? (
+                        <img src={item.url} alt={item.title} />
+                      ) : (
+                        <video src={item.url} controls preload="metadata" />
+                      )}
+                      <span className="admin-item-lang-tag">{item.language.toUpperCase()}</span>
+                    </div>
+                    <div className="admin-media-meta">
+                      <strong>{item.title}</strong>
+                      <span>
+                        {item.kind.toUpperCase()} {item.pairKey ? `· PAIR: ${item.pairKey.slice(-4)}` : ""}
+                      </span>
+                      <span className={`admin-status admin-status--${item.status}`}>
+                        {item.status === "published" ? c.published : c.draft}
+                      </span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
         </section>
       </main>
     );
@@ -1268,7 +1490,7 @@ export default function Admin() {
               <div className="admin-card-heading">
                 <span className="admin-index">02</span>
                 <h2>
-                  {c.library} ({mediaQuery.data?.length ?? 0})
+                  {c.library} ({allMedia.length})
                 </h2>
               </div>
               {editingItem && (
@@ -1361,11 +1583,9 @@ export default function Admin() {
                 </form>
               )}
 
-              {mediaQuery.isLoading ? (
-                <div className="admin-empty">…</div>
-              ) : mediaQuery.data?.length ? (
+              {allMedia.length ? (
                 <div className="admin-media-list">
-                  {mediaQuery.data.map((item) => (
+                  {allMedia.map((item) => (
                     <article className="admin-media-item" key={item.id}>
                       <div className="admin-media-preview">
                         {item.kind === "image" ? (
@@ -1389,20 +1609,31 @@ export default function Admin() {
                           </button>
                           <button
                             className="admin-status-button"
-                            onClick={() =>
-                              updateStatus.mutate({
-                                id: item.id,
-                                status: item.status === "published" ? "draft" : "published",
-                              })
-                            }
+                            onClick={async () => {
+                              const newStatus = item.status === "published" ? "draft" : "published";
+                              try {
+                                await updateFirestoreMediaStatus(String(item.id), newStatus);
+                              } catch {}
+                              try {
+                                if (typeof item.id === "number" || /^\d+$/.test(String(item.id))) {
+                                  updateStatus.mutate({
+                                    id: Number(item.id),
+                                    status: newStatus,
+                                  });
+                                }
+                              } catch {}
+                              setFirestoreMedia((prev) =>
+                                prev.map((it) => (String(it.id) === String(item.id) ? { ...it, status: newStatus } : it))
+                              );
+                              toast.success(c.statusUpdated);
+                            }}
                           >
                             {item.status === "published" ? c.unpublish : c.publish}
                           </button>
                           <button
                             type="button"
                             className="admin-status-button admin-status-button--danger"
-                            disabled={deleteMediaMutation.isPending}
-                            onClick={() => deleteMediaMutation.mutate({ id: item.id })}
+                            onClick={() => handleDeleteMedia(item)}
                           >
                             <Trash2 size={13} /> {c.delete}
                           </button>

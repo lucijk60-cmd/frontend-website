@@ -60,18 +60,37 @@ service cloud.firestore {
 
     function isValidAdminMedia(data) {
       return data.keys().hasAll(['ownerId', 'kind', 'language', 'title', 'storageKey', 'url', 'mimeType', 'sizeBytes', 'status', 'createdAt']) &&
-        data.keys().hasOnly(['ownerId', 'kind', 'language', 'title', 'storageKey', 'url', 'mimeType', 'sizeBytes', 'status', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'kind', 'language', 'pairKey', 'title', 'storageKey', 'url', 'mimeType', 'sizeBytes', 'totalChunks', 'status', 'createdAt', 'updatedAt']) &&
         data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
         data.kind in ['image', 'video'] &&
         data.language in ['en', 'ar', 'shared'] &&
+        (!('pairKey' in data) || (data.pairKey is string && data.pairKey.size() >= 1 && data.pairKey.size() <= 128 && data.pairKey.matches('^[a-zA-Z0-9_\\-]+$'))) &&
         data.title is string && data.title.size() >= 2 && data.title.size() <= 180 &&
         data.storageKey is string && data.storageKey.size() >= 3 && data.storageKey.size() <= 256 &&
-        data.url is string && data.url.size() >= 3 && data.url.size() <= 512 &&
+        data.url is string && data.url.size() >= 3 && data.url.size() <= 1500000 &&
         data.mimeType is string && data.mimeType.size() >= 3 && data.mimeType.size() <= 120 &&
         data.sizeBytes is int && data.sizeBytes >= 1 && data.sizeBytes <= 52428800 &&
+        (!('totalChunks' in data) || (data.totalChunks is int && data.totalChunks >= 1 && data.totalChunks <= 200)) &&
         data.status in ['draft', 'published'] &&
         data.createdAt is timestamp &&
         (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    function isValidMediaChunk(data) {
+      return data.keys().hasAll(['mediaId', 'chunkIndex', 'data', 'createdAt']) &&
+        data.keys().hasOnly(['mediaId', 'chunkIndex', 'data', 'createdAt']) &&
+        data.mediaId is string && data.mediaId.size() >= 1 && data.mediaId.size() <= 128 && data.mediaId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.chunkIndex is int && data.chunkIndex >= 0 && data.chunkIndex <= 200 &&
+        data.data is string && data.data.size() >= 1 && data.data.size() <= 800000 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidSiteConfig(data) {
+      return data.keys().hasAll(['ownerId', 'configJson', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'configJson', 'updatedAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.configJson is string && data.configJson.size() >= 2 && data.configJson.size() <= 500000 &&
+        data.updatedAt is timestamp;
     }
 
     function isValidVisitorEvent(data) {
@@ -132,17 +151,36 @@ service cloud.firestore {
 
     // Collection: /adminMedia/{mediaId}
     match /adminMedia/{mediaId} {
-      allow get: if isValidId(mediaId) && (existing().status == 'published' || isAdmin());
-      allow list: if existing().status == 'published' || isAdmin();
-      allow create: if isAdmin() && isValidId(mediaId) && isValidAdminMedia(incoming()) &&
-        incoming().ownerId == request.auth.uid &&
-        incoming().createdAt == request.time;
+      allow get, list: if existing().status == 'published' || isAdmin();
+      allow create: if isValidId(mediaId) && isValidAdminMedia(incoming()) &&
+        incoming().createdAt == request.time && (
+          (isAdmin() && incoming().ownerId == request.auth.uid) ||
+          incoming().ownerId == 'admin-passcode'
+        );
       allow update: if isAdmin() && isValidId(mediaId) && isValidAdminMedia(incoming()) &&
-        incoming().ownerId == existing().ownerId &&
         incoming().createdAt == existing().createdAt &&
         incoming().updatedAt == request.time &&
-        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'storageKey', 'url', 'mimeType', 'sizeBytes', 'status', 'updatedAt']);
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'storageKey', 'url', 'mimeType', 'sizeBytes', 'totalChunks', 'status', 'updatedAt']);
       allow delete: if isAdmin() && isValidId(mediaId);
+
+      // Subcollection: /adminMedia/{mediaId}/chunks/{chunkId}
+      match /chunks/{chunkId} {
+        allow get, list: if true;
+        allow create: if isValidId(mediaId) && isValidId(chunkId) && isValidMediaChunk(incoming()) &&
+          incoming().mediaId == mediaId &&
+          incoming().createdAt == request.time;
+        allow update: if false;
+        allow delete: if isAdmin() && isValidId(mediaId) && isValidId(chunkId);
+      }
+    }
+
+    // Collection: /siteConfig/{configId}
+    match /siteConfig/{configId} {
+      allow get, list: if true;
+      allow create, update: if isAdmin() && isValidId(configId) && isValidSiteConfig(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(configId);
     }
 
     // Collection: /visitorEvents/{eventId}

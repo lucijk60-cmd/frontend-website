@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { loadSiteConfigFromFirestore, saveSiteConfigToFirestore } from "./firebaseMedia";
 import {
   BRAND_NAME,
   galleryItems,
@@ -281,6 +282,7 @@ export function saveLocalSiteCustomization(config: SiteCustomization) {
   try {
     window.localStorage.setItem(SITE_CUSTOMIZATION_STORAGE_KEY, JSON.stringify(config));
     window.dispatchEvent(new CustomEvent(SITE_CUSTOMIZATION_EVENT, { detail: config }));
+    void saveSiteConfigToFirestore(config).catch(() => {});
   } catch {
     // ignore storage quota errors
   }
@@ -395,6 +397,24 @@ export function getCustomStaticVideoItems(custom: SiteCustomization) {
 
 export function useSiteCustomization(serverConfig?: Partial<SiteCustomization> | null) {
   const [customization, setCustomization] = useState<SiteCustomization>(() => loadLocalSiteCustomization());
+
+  // Check Firestore remote configuration on mount
+  useEffect(() => {
+    let active = true;
+    void loadSiteConfigFromFirestore().then((remote) => {
+      if (!active || !remote || !remote.updatedAt) return;
+      const local = loadLocalSiteCustomization();
+      if (new Date(remote.updatedAt).getTime() >= new Date(local.updatedAt).getTime()) {
+        const merged = mergeSiteCustomization(remote);
+        setCustomization(merged);
+        window.localStorage.setItem(SITE_CUSTOMIZATION_STORAGE_KEY, JSON.stringify(merged));
+        window.dispatchEvent(new CustomEvent(SITE_CUSTOMIZATION_EVENT, { detail: merged }));
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (serverConfig && typeof serverConfig === "object" && serverConfig.updatedAt) {
