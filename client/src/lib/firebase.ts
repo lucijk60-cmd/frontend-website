@@ -1,10 +1,14 @@
 import { initializeApp } from "firebase/app";
 import {
+  browserLocalPersistence,
   browserPopupRedirectResolver,
   GoogleAuthProvider,
+  indexedDBLocalPersistence,
   initializeAuth,
   inMemoryPersistence,
   signInWithPopup,
+  signOut,
+  type User,
 } from "firebase/auth";
 import {
   collection,
@@ -21,12 +25,24 @@ import {
 } from "firebase/firestore";
 import firebaseConfig from "../../../firebase-applet-config.json";
 
+export const OWNER_ADMIN_EMAIL = "jabedjk112@gmail.com";
+
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = initializeAuth(app, {
-  persistence: inMemoryPersistence,
+  persistence: [indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence],
 });
 export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: "select_account" });
+
+export function isOwnerFirebaseUser(user: User | null | undefined): boolean {
+  return Boolean(
+    user &&
+      user.emailVerified &&
+      user.email &&
+      user.email.toLowerCase() === OWNER_ADMIN_EMAIL
+  );
+}
 
 export enum OperationType {
   CREATE = "create",
@@ -80,19 +96,47 @@ export function handleFirestoreError(
   throw new Error(JSON.stringify(errInfo));
 }
 
-export async function testConnection() {
+export type FirebaseConnectionStatus = {
+  connected: boolean;
+  offline: boolean;
+  projectId: string;
+  databaseId: string;
+  error?: string;
+};
+
+export async function testConnection(): Promise<FirebaseConnectionStatus> {
   try {
-    const q = query(collection(db, "reviews"), where("status", "==", "approved"));
-    await getDocs(q);
+    await getDocFromServer(doc(db, "test", "connection"));
+    return {
+      connected: true,
+      offline: false,
+      projectId: firebaseConfig.projectId,
+      databaseId: firebaseConfig.firestoreDatabaseId,
+    };
   } catch (error) {
-    if (error instanceof Error && error.message.includes("the client is offline")) {
-      console.warn("Firebase client is currently offline.");
+    const msg = error instanceof Error ? error.message : String(error);
+    const isOffline = msg.includes("the client is offline");
+    if (isOffline) {
+      console.error("Please check your Firebase configuration.", msg);
     }
+    // Permission-denied still means the server is reachable, though /test/connection allows get
+    const serverReached = !isOffline && msg.toLowerCase().includes("permission");
+    return {
+      connected: serverReached,
+      offline: isOffline,
+      projectId: firebaseConfig.projectId,
+      databaseId: firebaseConfig.firestoreDatabaseId,
+      error: serverReached ? undefined : msg,
+    };
   }
 }
 
 export async function signInWithGooglePopup() {
   return signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
+}
+
+export async function signOutFirebase() {
+  return signOut(auth);
 }
 
 export async function fetchApprovedFirestoreReviews() {
@@ -170,4 +214,3 @@ export async function deleteAdminMediaFromFirestore(mediaId: string) {
     handleFirestoreError(error, OperationType.DELETE, path);
   }
 }
-

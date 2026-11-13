@@ -29,6 +29,11 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import {
+  CheckCircle2,
+  Cloud,
+  WifiOff,
+} from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,20 +45,29 @@ import { uploadMediaWithProgress } from "@/lib/uploadProgress";
 import {
   deleteFirestoreAdminMedia as deleteFirebaseMedia,
   fetchFirestoreAdminMedia,
+  replaceFirestoreMediaFile,
   resolveMediaUrl,
-  updateFirestoreMediaStatus,
+  updateFirestoreMedia,
+  uploadMediaToFirebase,
+  useResolvedMediaUrl,
   type FirebaseMediaItem,
 } from "@/lib/firebaseMedia";
 import {
   auth,
   deleteAdminMediaFromFirestore,
   deleteReviewFromFirestore,
+  isOwnerFirebaseUser,
+  OWNER_ADMIN_EMAIL,
   signInWithGooglePopup,
+  signOutFirebase,
+  testConnection,
   updateReviewStatusInFirestore,
+  type FirebaseConnectionStatus,
 } from "@/lib/firebase";
 import { onAuthStateChanged, type User as FirebaseUser } from "firebase/auth";
 import {
   galleryItems,
+  images,
   LANGUAGE_OPTIONS,
   translations,
   type Content,
@@ -88,6 +102,7 @@ type AdminMediaItem = {
   mimeType: string;
   sizeBytes: number;
   totalChunks?: number;
+  createdAt?: unknown;
 };
 
 const ADMIN_MODE_STORAGE_KEY = "ppfstudio-admin-mode";
@@ -261,15 +276,6 @@ function readFileAsBase64(file: File, onProgress?: (percent: number) => void) {
   });
 }
 
-function readFileAsDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Unable to read file."));
-    reader.readAsDataURL(file);
-  });
-}
-
 const SECTION_LABELS: Array<{ key: keyof SectionVisibilityConfig; labelEn: string; labelAr: string }> = [
   { key: "preloader", labelEn: "Preloader Opening Animation", labelAr: "شاشة التحميل الافتتاحية" },
   { key: "languageModalOnFirstVisit", labelEn: "Language Selection Popup on First Visit", labelAr: "نافذة اختيار اللغة عند أول زيارة" },
@@ -287,6 +293,61 @@ const SECTION_LABELS: Array<{ key: keyof SectionVisibilityConfig; labelEn: strin
   { key: "seoGuides", labelEn: "Saudi Search Guides Section", labelAr: "قسم أدلة البحث في السعودية" },
   { key: "floatingWhatsapp", labelEn: "Floating WhatsApp Button", labelAr: "زر واتساب العائم" },
 ];
+
+function ResolvedImg({
+  src,
+  mimeType,
+  alt = "",
+  ...props
+}: React.ImgHTMLAttributes<HTMLImageElement> & { mimeType?: string }) {
+  const resolved = useResolvedMediaUrl(src, mimeType);
+  if (!resolved) {
+    return (
+      <div
+        className={props.className}
+        style={{
+          display: "grid",
+          placeItems: "center",
+          minHeight: "100%",
+          width: "100%",
+          background: "#121314",
+          color: "#8a857b",
+          fontSize: "11px",
+        }}
+      >
+        Loading…
+      </div>
+    );
+  }
+  return <img src={resolved} alt={alt} {...props} />;
+}
+
+function ResolvedVideo({
+  src,
+  mimeType,
+  ...props
+}: React.VideoHTMLAttributes<HTMLVideoElement> & { mimeType?: string }) {
+  const resolved = useResolvedMediaUrl(src, mimeType || "video/mp4");
+  if (!resolved) {
+    return (
+      <div
+        className={props.className}
+        style={{
+          display: "grid",
+          placeItems: "center",
+          minHeight: "100%",
+          width: "100%",
+          background: "#121314",
+          color: "#8a857b",
+          fontSize: "11px",
+        }}
+      >
+        Loading video…
+      </div>
+    );
+  }
+  return <video src={resolved} {...props} />;
+}
 
 export default function Admin() {
   const [, setLocation] = useLocation();
@@ -315,6 +376,11 @@ export default function Admin() {
   const [directUrl, setDirectUrl] = useState("");
   const [firestoreMedia, setFirestoreMedia] = useState<FirebaseMediaItem[]>([]);
   const [resolvedMediaUrls, setResolvedMediaUrls] = useState<Record<string, string>>({});
+  const [firebaseStatus, setFirebaseStatus] = useState<FirebaseConnectionStatus | null>(null);
+  const [isCheckingFirebase, setIsCheckingFirebase] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [heroVideoUploading, setHeroVideoUploading] = useState(false);
+  const [heroVideoUploadPct, setHeroVideoUploadPct] = useState(0);
 
   // Direct owner review creation form state
   const [newReviewName, setNewReviewName] = useState("");
@@ -410,6 +476,20 @@ export default function Admin() {
     });
   }, []);
 
+  const refreshFirebaseStatus = async () => {
+    setIsCheckingFirebase(true);
+    try {
+      const status = await testConnection();
+      setFirebaseStatus(status);
+    } finally {
+      setIsCheckingFirebase(false);
+    }
+  };
+
+  useEffect(() => {
+    void refreshFirebaseStatus();
+  }, []);
+
   const deleteMediaMutation = trpc.admin.media.delete.useMutation({
     onSuccess: async (_, variables) => {
       if (firebaseUser) {
@@ -468,7 +548,8 @@ export default function Admin() {
   });
 
   const logout = trpc.admin.logout.useMutation({
-    onSuccess: () => {
+    onSettled: async () => {
+      await signOutFirebase().catch(() => undefined);
       setAuthenticated(false);
       setGateValues(["", ""]);
     },
@@ -534,8 +615,12 @@ export default function Admin() {
   }, [firestoreMedia, mediaQuery.data, resolvedMediaUrls]);
 
   const canSubmit = useMemo(
-    () => Boolean(title.trim() && ((uploadMode === "file" && englishFile) || (uploadMode === "url" && directUrl.trim()))),
-    [title, uploadMode, englishFile, directUrl]
+    () =>
+      Boolean(
+        title.trim().length >= 2 &&
+          ((uploadMode === "file" && (englishFile || arabicFile)) || (uploadMode === "url" && directUrl.trim()))
+      ),
+    [title, uploadMode, englishFile, arabicFile, directUrl]
   );
 
   const startEditing = (item: AdminMediaItem) => {
@@ -549,35 +634,60 @@ export default function Admin() {
     event.preventDefault();
     if (!editingItem) return;
     const strId = String(editingItem.id);
-    if (editTitle.trim() && (editTitle.trim() !== editingItem.title || editStatus !== editingItem.status)) {
-      try {
-        await updateFirestoreMediaStatus(strId, editStatus);
-      } catch {}
-      try {
-        if (typeof editingItem.id === "number" || /^\d+$/.test(strId)) {
-          await updateMedia.mutateAsync({ id: Number(editingItem.id), title: editTitle.trim(), status: editStatus });
-        }
-      } catch {}
-      setFirestoreMedia((prev) =>
-        prev.map((it) => (String(it.id) === strId ? { ...it, title: editTitle.trim(), status: editStatus } : it))
-      );
-      toast.success(language === "ar" ? "تم تحديث بيانات الوسائط." : "Media details updated.");
+    const trimmedTitle = editTitle.trim();
+    if (trimmedTitle.length < 2) {
+      toast.error(language === "ar" ? "العنوان يجب أن يكون حرفين على الأقل." : "Title must be at least 2 characters.");
+      return;
     }
-    if (replaceFile) {
-      const dataBase64 = await readFileAsBase64(replaceFile);
-      try {
-        if (typeof editingItem.id === "number" || /^\d+$/.test(strId)) {
-          await replaceMedia.mutateAsync({
-            id: Number(editingItem.id),
-            fileName: replaceFile.name,
-            mimeType: replaceFile.type,
-            dataBase64,
-          });
+
+    setIsSavingEdit(true);
+    try {
+      if (trimmedTitle !== editingItem.title || editStatus !== editingItem.status) {
+        try {
+          await updateFirestoreMedia(strId, { title: trimmedTitle, status: editStatus });
+        } catch (err) {
+          console.warn("Firestore metadata update fallback:", err);
         }
-      } catch {}
+        try {
+          if (typeof editingItem.id === "number" || /^\d+$/.test(strId)) {
+            await updateMedia.mutateAsync({ id: Number(editingItem.id), title: trimmedTitle, status: editStatus });
+          }
+        } catch {}
+        setFirestoreMedia((prev) =>
+          prev.map((it) => (String(it.id) === strId ? { ...it, title: trimmedTitle, status: editStatus } : it))
+        );
+      }
+
+      if (replaceFile) {
+        try {
+          await replaceFirestoreMediaFile(strId, editingItem.kind, replaceFile);
+        } catch (err) {
+          console.warn("Firestore file replacement fallback:", err);
+        }
+        try {
+          if (typeof editingItem.id === "number" || /^\d+$/.test(strId)) {
+            const dataBase64 = await readFileAsBase64(replaceFile);
+            await replaceMedia.mutateAsync({
+              id: Number(editingItem.id),
+              fileName: replaceFile.name,
+              mimeType: replaceFile.type,
+              dataBase64,
+            });
+          }
+        } catch {}
+      }
+
+      toast.success(language === "ar" ? "تم حفظ التغييرات بنجاح." : "Media updated & saved in Firebase.");
+      setEditingItem(null);
+      setReplaceFile(null);
       void loadFirebaseMedia();
+      void mediaQuery.refetch();
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Could not update media.";
+      toast.error(msg);
+    } finally {
+      setIsSavingEdit(false);
     }
-    setEditingItem(null);
   };
 
   const handleDeleteMedia = async (item: AdminMediaItem) => {
@@ -600,42 +710,60 @@ export default function Admin() {
     void loadFirebaseMedia();
   };
 
-  const submitPasswordGate = (event: React.FormEvent) => {
+  const submitPasswordGate = async (event: React.FormEvent) => {
     event.preventDefault();
     if (gateValues.some((value) => !value.trim())) {
       toast.error(language === "ar" ? "أكمل كلمتي المرور." : "Complete both passwords.");
       return;
     }
     selectAdminMode("password");
-    setAuthenticated(true);
-    toast.success(
-      language === "ar"
-        ? "تم فتح نافذة رفع الصور والفيديوهات عبر Firebase بنجاح."
-        : "Firebase Video & Picture Upload window unlocked."
-    );
-    verifyGate.mutate(
-      {
+    try {
+      await verifyGate.mutateAsync({
         password: gateValues[0],
         ppfPassword: gateValues[1],
-      },
-      {
-        onSuccess: () => {
-          setAuthenticated(true);
-        },
+      });
+      setAuthenticated(true);
+      toast.success(
+        language === "ar"
+          ? "تم فتح نافذة رفع الصور والفيديوهات عبر Firebase بنجاح."
+          : "Firebase Video & Picture Upload window unlocked."
+      );
+    } catch (err: unknown) {
+      const trpcCode =
+        typeof err === "object" && err !== null && "data" in err
+          ? (err as { data?: { code?: string } }).data?.code
+          : undefined;
+      if (trpcCode === "FORBIDDEN" || trpcCode === "UNAUTHORIZED" || trpcCode === "TOO_MANY_REQUESTS") {
+        return;
       }
-    );
+      // Static/offline fallback when backend API is unavailable
+      if (gateValues[0] === "PPFStudio@2026" && gateValues[1] === "RiyadhPPF#2026") {
+        setAuthenticated(true);
+        toast.success(
+          language === "ar"
+            ? "تم فتح نافذة رفع الصور والفيديوهات عبر Firebase بنجاح."
+            : "Firebase Video & Picture Upload window unlocked."
+        );
+      } else {
+        toast.error(
+          language === "ar"
+            ? "تعذر الدخول. تحقق من كلمتي المرور وحاول مرة أخرى."
+            : "Login failed. Check the two passwords and try again."
+        );
+      }
+    }
   };
 
   const handleGmailGateLogin = async () => {
     selectAdminMode("gmail");
     try {
       const cred = await signInWithGooglePopup();
-      if (!cred.user?.email || cred.user.email === "jabedjk112@gmail.com") {
+      if (isOwnerFirebaseUser(cred.user)) {
         setAuthenticated(true);
         toast.success(
           language === "ar"
-            ? "تم فتح لوحة تحكم المالك الشاملة عبر Gmail (jabedjk112@gmail.com)."
-            : "Gmail Owner Master Control Panel unlocked (jabedjk112@gmail.com)."
+            ? `تم فتح لوحة تحكم المالك الشاملة عبر Gmail (${OWNER_ADMIN_EMAIL}).`
+            : `Gmail Owner Master Control Panel unlocked (${OWNER_ADMIN_EMAIL}).`
         );
         verifyGate.mutate(
           { password: "PPFStudio@2026", ppfPassword: "RiyadhPPF#2026" },
@@ -646,68 +774,149 @@ export default function Admin() {
           }
         );
       } else {
+        await signOutFirebase().catch(() => undefined);
         toast.error(
           language === "ar"
-            ? `هذا الحساب (${cred.user.email}) غير مخول. حساب المالك هو jabedjk112@gmail.com`
-            : `Account (${cred.user.email}) is not authorized. Authorized owner is jabedjk112@gmail.com`
+            ? `هذا الحساب (${cred.user.email || "unknown"}) غير مخول. حساب المالك هو ${OWNER_ADMIN_EMAIL}`
+            : `Account (${cred.user.email || "unknown"}) is not authorized. Authorized owner is ${OWNER_ADMIN_EMAIL}`
         );
       }
-    } catch {
-      setAuthenticated(true);
-      toast.success(
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "Google Sign-In popup failed or was closed.";
+      toast.error(
         language === "ar"
-          ? "تم فتح لوحة تحكم المالك الشاملة عبر Gmail."
-          : "Gmail Owner Master Control Panel unlocked."
+          ? `فشل الدخول بحساب Gmail (${detail}). يرجى السماح بالنافذة المنبثقة وتسجيل الدخول بحساب ${OWNER_ADMIN_EMAIL}.`
+          : `Google Sign-In failed (${detail}). Please allow popups and sign in with ${OWNER_ADMIN_EMAIL}.`
       );
+    }
+  };
+
+  const handleConnectOwnerFirebase = async () => {
+    try {
+      const cred = await signInWithGooglePopup();
+      if (isOwnerFirebaseUser(cred.user)) {
+        toast.success(
+          language === "ar"
+            ? `تم ربط حساب المالك (${OWNER_ADMIN_EMAIL}) بـ Firebase بنجاح.`
+            : `Owner Gmail (${OWNER_ADMIN_EMAIL}) connected to Firebase.`
+        );
+        void refreshFirebaseStatus();
+      } else {
+        await signOutFirebase().catch(() => undefined);
+        toast.error(
+          language === "ar"
+            ? `يرجى اختيار حساب المالك (${OWNER_ADMIN_EMAIL}).`
+            : `Please select the owner Gmail account (${OWNER_ADMIN_EMAIL}).`
+        );
+      }
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "Could not sign in with Google.";
+      toast.error(detail);
     }
   };
 
   const submitUpload = async (event: React.FormEvent) => {
     event.preventDefault();
-    const effectiveArabic = arabicFile || englishFile;
-    if (!canSubmit || (uploadMode === "file" && (!englishFile || !effectiveArabic))) {
+    const cleanTitle = title.trim();
+    if (cleanTitle.length < 2) {
+      toast.error(
+        language === "ar"
+          ? "يرجى كتابة عنوان للملف (حرفين على الأقل)."
+          : "Please enter an asset title (at least 2 characters)."
+      );
+      return;
+    }
+    if (uploadMode === "file" && !englishFile && !arabicFile) {
       toast.error(c.invalid);
       return;
     }
+    if (uploadMode === "url" && !directUrl.trim()) {
+      toast.error(language === "ar" ? "يرجى إدخال رابط الصورة أو الفيديو." : "Please paste a direct image or video URL.");
+      return;
+    }
+
     const pairKey = `ppfstudio-${Date.now()}-${window.crypto.randomUUID().slice(0, 8)}`;
     try {
       setIsUploading(true);
       setUploadErrorMessage("");
-      setUploadStage("english");
-      setUploadProgress({ english: 10, arabic: 0 });
 
-      await uploadMediaWithProgress(
-        {
-          kind,
-          language: "en",
-          pairKey,
-          title: title.trim(),
-          fileName: englishFile?.name || (kind === "video" ? "video-en.mp4" : "image-en.jpg"),
-          mimeType: englishFile?.type || (kind === "video" ? "video/mp4" : "image/jpeg"),
-          publish,
-          directUrl: uploadMode === "url" ? directUrl.trim() : undefined,
-        },
-        uploadMode === "file" ? englishFile : null,
-        (percent) => setUploadProgress({ english: percent, arabic: 0 })
-      );
+      if (uploadMode === "url") {
+        setUploadStage("english");
+        setUploadProgress({ english: 25, arabic: 25 });
+        await uploadMediaWithProgress(
+          {
+            kind,
+            language: "shared",
+            pairKey,
+            title: cleanTitle,
+            fileName: kind === "video" ? "direct-video.mp4" : "direct-image.jpg",
+            mimeType: kind === "video" ? "video/mp4" : "image/jpeg",
+            publish,
+            directUrl: directUrl.trim(),
+          },
+          null,
+          (percent) => setUploadProgress({ english: percent, arabic: percent })
+        );
+      } else {
+        const hasTwoDistinctFiles = Boolean(
+          englishFile &&
+            arabicFile &&
+            (englishFile.name !== arabicFile.name ||
+              englishFile.size !== arabicFile.size ||
+              englishFile.lastModified !== arabicFile.lastModified)
+        );
 
-      setUploadProgress({ english: 100, arabic: 10 });
-      setUploadStage("arabic");
+        if (!hasTwoDistinctFiles) {
+          const singleFile = englishFile || arabicFile!;
+          setUploadStage("english");
+          setUploadProgress({ english: 10, arabic: 10 });
+          await uploadMediaWithProgress(
+            {
+              kind,
+              language: "shared",
+              pairKey,
+              title: cleanTitle,
+              fileName: singleFile.name,
+              mimeType: singleFile.type || (kind === "video" ? "video/mp4" : "image/jpeg"),
+              publish,
+            },
+            singleFile,
+            (percent) => setUploadProgress({ english: percent, arabic: percent })
+          );
+        } else {
+          setUploadStage("english");
+          setUploadProgress({ english: 10, arabic: 0 });
+          await uploadMediaWithProgress(
+            {
+              kind,
+              language: "en",
+              pairKey,
+              title: cleanTitle,
+              fileName: englishFile!.name,
+              mimeType: englishFile!.type || (kind === "video" ? "video/mp4" : "image/jpeg"),
+              publish,
+            },
+            englishFile,
+            (percent) => setUploadProgress({ english: percent, arabic: 0 })
+          );
 
-      await uploadMediaWithProgress(
-        {
-          kind,
-          language: "ar",
-          pairKey,
-          title: title.trim(),
-          fileName: effectiveArabic?.name || (kind === "video" ? "video-ar.mp4" : "image-ar.jpg"),
-          mimeType: effectiveArabic?.type || (kind === "video" ? "video/mp4" : "image/jpeg"),
-          publish,
-          directUrl: uploadMode === "url" ? directUrl.trim() : undefined,
-        },
-        uploadMode === "file" ? effectiveArabic : null,
-        (percent) => setUploadProgress({ english: 100, arabic: percent })
-      );
+          setUploadProgress({ english: 100, arabic: 10 });
+          setUploadStage("arabic");
+          await uploadMediaWithProgress(
+            {
+              kind,
+              language: "ar",
+              pairKey,
+              title: cleanTitle,
+              fileName: arabicFile!.name,
+              mimeType: arabicFile!.type || (kind === "video" ? "video/mp4" : "image/jpeg"),
+              publish,
+            },
+            arabicFile,
+            (percent) => setUploadProgress({ english: 100, arabic: percent })
+          );
+        }
+      }
 
       setUploadProgress({ english: 100, arabic: 100 });
       setTitle("");
@@ -854,27 +1063,53 @@ export default function Admin() {
   ) => {
     if (!file) return;
     try {
-      const dataUrl = await readFileAsDataUrl(file);
+      const res = await uploadMediaToFirebase(
+        {
+          kind: "image",
+          language: "shared",
+          title: `Site ${slot}`,
+          fileName: file.name,
+          mimeType: file.type || "image/jpeg",
+          publish: false,
+        },
+        file,
+        () => {}
+      );
       const next: SiteCustomization = {
         ...siteCustom,
         media: {
           ...siteCustom.media,
-          [slot]: dataUrl,
+          [slot]: res.url,
         },
       };
       await persistSiteCustomization(
         next,
-        language === "ar" ? "تم تحديث صورة الموقع فوراً." : "Website picture updated immediately."
+        language === "ar"
+          ? "تم رفع الصورة وحفظها في Firebase وتحديث الموقع فوراً."
+          : "Picture uploaded to Firebase & applied to website immediately."
       );
-    } catch {
-      toast.error("Could not read image file.");
+      void loadFirebaseMedia();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Could not upload image to Firebase.";
+      toast.error(msg);
     }
   };
 
   const handleBuiltInGalleryFileOverride = async (galleryId: number, file: File | null) => {
     if (!file) return;
     try {
-      const dataUrl = await readFileAsDataUrl(file);
+      const res = await uploadMediaToFirebase(
+        {
+          kind: "image",
+          language: "shared",
+          title: `Portfolio #${galleryId}`,
+          fileName: file.name,
+          mimeType: file.type || "image/jpeg",
+          publish: false,
+        },
+        file,
+        () => {}
+      );
       const next: SiteCustomization = {
         ...siteCustom,
         media: {
@@ -883,18 +1118,63 @@ export default function Admin() {
             ...siteCustom.media.galleryOverrides,
             [galleryId]: {
               ...(siteCustom.media.galleryOverrides?.[galleryId] ?? {}),
-              src: dataUrl,
-              arSrc: dataUrl,
+              src: res.url,
+              arSrc: res.url,
             },
           },
         },
       };
       await persistSiteCustomization(
         next,
-        language === "ar" ? "تم استبدال صورة المعرض بنجاح." : "Gallery picture replaced on website."
+        language === "ar"
+          ? "تم رفع صورة المعرض إلى Firebase واستبدالها بنجاح."
+          : "Gallery picture uploaded to Firebase & replaced on website."
       );
-    } catch {
-      toast.error("Could not read image file.");
+      void loadFirebaseMedia();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Could not upload image to Firebase.";
+      toast.error(msg);
+    }
+  };
+
+  const handleHeroVideoUploadFile = async (file: File | null) => {
+    if (!file) return;
+    setHeroVideoUploading(true);
+    setHeroVideoUploadPct(5);
+    try {
+      const res = await uploadMediaToFirebase(
+        {
+          kind: "video",
+          language: "shared",
+          title: "Hero Background Video",
+          fileName: file.name,
+          mimeType: file.type || "video/mp4",
+          publish: false,
+        },
+        file,
+        (pct) => setHeroVideoUploadPct(pct)
+      );
+      const next: SiteCustomization = {
+        ...siteCustom,
+        media: {
+          ...siteCustom.media,
+          heroVideo: res.url,
+          showHeroVideo: true,
+        },
+      };
+      await persistSiteCustomization(
+        next,
+        language === "ar"
+          ? "تم رفع فيديو خلفية الواجهة إلى Firebase وتفعيله بنجاح!"
+          : "Hero background video uploaded to Firebase & activated!"
+      );
+      void loadFirebaseMedia();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Could not upload hero video to Firebase.";
+      toast.error(msg);
+    } finally {
+      setHeroVideoUploading(false);
+      setHeroVideoUploadPct(0);
     }
   };
 
@@ -1032,11 +1312,62 @@ export default function Admin() {
             <span className="admin-eyebrow">{c.passwordEyebrow}</span>
             <h1>{c.title}</h1>
             <p>{c.intro}</p>
+            <div
+              style={{
+                display: "inline-flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: "0.55rem",
+                marginTop: "0.85rem",
+                padding: "0.45rem 0.75rem",
+                borderRadius: "6px",
+                border: "1px solid",
+                borderColor: firebaseStatus?.connected ? "rgba(37,211,102,0.35)" : "rgba(200,165,107,0.35)",
+                background: "rgba(18,20,22,0.85)",
+                fontSize: "12px",
+              }}
+            >
+              {firebaseStatus?.connected ? (
+                <Cloud size={14} style={{ color: "#25d366" }} />
+              ) : (
+                <WifiOff size={14} style={{ color: "#c8a56b" }} />
+              )}
+              <span>
+                {firebaseStatus?.connected
+                  ? language === "ar"
+                    ? "متصل بـ Firebase Firestore (جاهز للرفع)"
+                    : "Firebase Firestore Connected (Ready to Upload)"
+                  : firebaseStatus?.offline
+                    ? language === "ar"
+                      ? "غير متصل بـ Firebase"
+                      : "Firebase Offline"
+                    : language === "ar"
+                      ? "جارٍ فحص اتصال Firebase..."
+                      : "Checking Firebase Connection…"}
+              </span>
+              <button
+                type="button"
+                onClick={() => void refreshFirebaseStatus()}
+                disabled={isCheckingFirebase}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#c8a56b",
+                  cursor: "pointer",
+                  fontSize: "11px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                <RefreshCw size={11} /> {isCheckingFirebase ? "…" : language === "ar" ? "فحص" : "Test"}
+              </button>
+            </div>
           </div>
           <div className="admin-hero-stamp">
-            UPLOAD
+            FIREBASE
             <br />
-            <span>ONLY</span>
+            <span>UPLOAD</span>
           </div>
         </section>
 
@@ -1177,9 +1508,6 @@ export default function Admin() {
                       onChange={(event) => {
                         const f = event.target.files?.[0] ?? null;
                         setSelectedFile(f);
-                        if (slot === "en" && !arabicFile && f) {
-                          setArabicFile(f);
-                        }
                       }}
                     />
                     {selectedFile && (
@@ -1260,9 +1588,9 @@ export default function Admin() {
                   <article className="admin-media-item" key={item.id}>
                     <div className="admin-media-preview">
                       {item.kind === "image" ? (
-                        <img src={item.url} alt={item.title} />
+                        <ResolvedImg src={item.url} mimeType={item.mimeType} alt={item.title} />
                       ) : (
-                        <video src={item.url} controls preload="metadata" />
+                        <ResolvedVideo src={item.url} mimeType={item.mimeType} controls preload="metadata" />
                       )}
                       <span className="admin-item-lang-tag">{item.language.toUpperCase()}</span>
                     </div>
@@ -1326,9 +1654,64 @@ export default function Admin() {
           <p>{c.gmailIntro}</p>
           <div className="admin-gmail-identity">
             <Mail size={14} />
-            <span>{firebaseUser?.email ?? "jabedjk112@gmail.com"}</span>
+            <span>{firebaseUser?.email ?? OWNER_ADMIN_EMAIL}</span>
             <span>·</span>
             <span>{language === "ar" ? "صلاحيات المالك الكاملة (Full Owner Power)" : "Full Website Owner Authority"}</span>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: "0.75rem",
+              marginTop: "0.75rem",
+              padding: "0.5rem 0.85rem",
+              borderRadius: "6px",
+              border: "1px solid",
+              borderColor: firebaseStatus?.connected ? "rgba(37,211,102,0.35)" : "rgba(200,165,107,0.35)",
+              background: "rgba(18,20,22,0.85)",
+              fontSize: "12px",
+              width: "fit-content",
+            }}
+          >
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              {firebaseStatus?.connected ? (
+                <Cloud size={14} style={{ color: "#25d366" }} />
+              ) : (
+                <WifiOff size={14} style={{ color: "#c8a56b" }} />
+              )}
+              {firebaseStatus?.connected
+                ? language === "ar"
+                  ? "Firebase متصل وجاهز"
+                  : "Firebase Connected"
+                : language === "ar"
+                  ? "جارٍ فحص Firebase..."
+                  : "Checking Firebase…"}
+            </span>
+            <span>·</span>
+            {isOwnerFirebaseUser(firebaseUser) ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", color: "#25d366" }}>
+                <CheckCircle2 size={14} />{" "}
+                {language === "ar" ? "حساب المالك موثق (Firebase Auth)" : "Owner Firebase Auth Verified"}
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void handleConnectOwnerFirebase()}
+                style={{
+                  background: "#c8a56b",
+                  color: "#000",
+                  border: "none",
+                  borderRadius: "4px",
+                  padding: "0.25rem 0.6rem",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                {language === "ar" ? "ربط حساب المالك في Firebase" : "Connect Owner Gmail Auth"}
+              </button>
+            )}
           </div>
         </div>
         <div className="admin-hero-stamp admin-hero-stamp--gmail">
@@ -1393,6 +1776,48 @@ export default function Admin() {
                 <span className="admin-index">01</span>
                 <h2>{c.uploadTitle}</h2>
               </div>
+              <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+                <button
+                  type="button"
+                  className="admin-status-button"
+                  style={{
+                    padding: "0.45rem 0.9rem",
+                    borderRadius: "6px",
+                    background: uploadMode === "file" ? "#c8a56b" : "#141414",
+                    color: uploadMode === "file" ? "#000" : "#aaa",
+                    border: "1px solid",
+                    borderColor: uploadMode === "file" ? "#c8a56b" : "#2a2a2a",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                  }}
+                  onClick={() => setUploadMode("file")}
+                >
+                  <Upload size={14} /> {language === "ar" ? "رفع ملفات (فايربيس)" : "Upload File (Firebase)"}
+                </button>
+                <button
+                  type="button"
+                  className="admin-status-button"
+                  style={{
+                    padding: "0.45rem 0.9rem",
+                    borderRadius: "6px",
+                    background: uploadMode === "url" ? "#c8a56b" : "#141414",
+                    color: uploadMode === "url" ? "#000" : "#aaa",
+                    border: "1px solid",
+                    borderColor: uploadMode === "url" ? "#c8a56b" : "#2a2a2a",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                  }}
+                  onClick={() => setUploadMode("url")}
+                >
+                  <Globe size={14} /> {language === "ar" ? "رابط مباشر (URL)" : "Direct URL (Image / Video)"}
+                </button>
+              </div>
               <div className="admin-form-grid">
                 <div className="admin-field">
                   <Label>{c.kind}</Label>
@@ -1417,70 +1842,122 @@ export default function Admin() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="admin-field">
+                  <Label htmlFor="owner-asset-title">{c.titleLabel}</Label>
+                  <Input
+                    id="owner-asset-title"
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
+                    placeholder="e.g. Full body PPF / حماية كاملة"
+                    maxLength={180}
+                  />
+                </div>
               </div>
-              <div className="admin-field">
-                <Label htmlFor="owner-asset-title">{c.titleLabel}</Label>
-                <Input
-                  id="owner-asset-title"
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  placeholder="e.g. Full body PPF / حماية كاملة"
-                  maxLength={180}
-                />
-              </div>
-              <div className="admin-pair-grid">
-                {(
-                  [
-                    ["en", c.englishSlot, englishFile, englishPreview, setEnglishFile],
-                    ["ar", c.arabicSlot, arabicFile, arabicPreview, setArabicFile],
-                  ] as const
-                ).map(([slot, label, selectedFile, preview, setSelectedFile]) => (
-                  <label
-                    className={`admin-pair-dropzone ${selectedFile ? "admin-pair-dropzone--selected" : ""}`}
-                    htmlFor={`owner-${slot}-file`}
-                    key={slot}
-                  >
-                    <span className="admin-pair-label">{label}</span>
-                    {selectedFile && kind === "image" && <img src={preview} alt="" className="admin-selected-preview" />}
-                    {selectedFile && kind === "video" && (
-                      <video src={preview} className="admin-selected-preview" muted preload="metadata" />
-                    )}
-                    <strong>{selectedFile ? selectedFile.name : c.file}</strong>
-                    <span className="admin-file-meta">
-                      {selectedFile
-                        ? `${c.selected} · ${selectedFile.type || "unknown type"} · ${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`
-                        : c.fileHint}
-                    </span>
-                    <input
-                      id={`owner-${slot}-file`}
-                      type="file"
-                      accept={
-                        kind === "image"
-                          ? "image/jpeg,image/png,image/webp,image/avif"
-                          : "video/mp4,video/webm,video/quicktime"
-                      }
-                      onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
-                    />
-                    {selectedFile && (
-                      <button
-                        type="button"
-                        className="admin-clear-file"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          setSelectedFile(null);
-                        }}
-                      >
-                        {c.clear}
-                      </button>
-                    )}
-                  </label>
-                ))}
-              </div>
+              {uploadMode === "url" ? (
+                <div className="admin-field" style={{ margin: "1rem 0" }}>
+                  <Label htmlFor="owner-direct-url-input">
+                    {language === "ar"
+                      ? "رابط الصورة أو الفيديو المباشر (Direct Media URL)"
+                      : "Direct Media URL (MP4, YouTube, Image)"}
+                  </Label>
+                  <Input
+                    id="owner-direct-url-input"
+                    value={directUrl}
+                    onChange={(event) => setDirectUrl(event.target.value)}
+                    placeholder="https://... (mp4, jpg, png, webp, youtube, or cloud link)"
+                  />
+                </div>
+              ) : (
+                <div className="admin-pair-grid">
+                  {(
+                    [
+                      ["en", c.englishSlot, englishFile, englishPreview, setEnglishFile],
+                      ["ar", c.arabicSlot, arabicFile, arabicPreview, setArabicFile],
+                    ] as const
+                  ).map(([slot, label, selectedFile, preview, setSelectedFile]) => (
+                    <label
+                      className={`admin-pair-dropzone ${selectedFile ? "admin-pair-dropzone--selected" : ""}`}
+                      htmlFor={`owner-${slot}-file`}
+                      key={slot}
+                    >
+                      <span className="admin-pair-label">{label}</span>
+                      {selectedFile && kind === "image" && <img src={preview} alt="" className="admin-selected-preview" />}
+                      {selectedFile && kind === "video" && (
+                        <video src={preview} className="admin-selected-preview" muted preload="metadata" />
+                      )}
+                      <strong>{selectedFile ? selectedFile.name : c.file}</strong>
+                      <span className="admin-file-meta">
+                        {selectedFile
+                          ? `${c.selected} · ${selectedFile.type || "unknown type"} · ${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`
+                          : c.fileHint}
+                      </span>
+                      <input
+                        id={`owner-${slot}-file`}
+                        type="file"
+                        accept={
+                          kind === "image"
+                            ? "image/jpeg,image/png,image/webp,image/avif"
+                            : "video/mp4,video/webm,video/quicktime"
+                        }
+                        onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                      />
+                      {selectedFile && (
+                        <button
+                          type="button"
+                          className="admin-clear-file"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setSelectedFile(null);
+                          }}
+                        >
+                          {c.clear}
+                        </button>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              )}
               <label className="admin-check">
                 <input type="checkbox" checked={publish} onChange={(event) => setPublish(event.target.checked)} />
                 <span>{c.publishNow}</span>
               </label>
+              {uploadStage !== "idle" && (
+                <div
+                  className={`admin-upload-status ${uploadStage === "error" ? "admin-upload-status--error" : ""}`}
+                  aria-live="polite"
+                >
+                  <span className="admin-status-line">
+                    {uploadStage !== "saved" && uploadStage !== "error" && (
+                      <LoaderCircle className="admin-spinner" size={14} />
+                    )}
+                    {uploadStage === "english"
+                      ? c.uploadingEnglish
+                      : uploadStage === "arabic"
+                        ? c.uploadingArabic
+                        : uploadStage === "error"
+                          ? uploadErrorMessage || c.uploadError
+                          : c.saved}
+                  </span>
+                  <div
+                    className="admin-progress-track"
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round((uploadProgress.english + uploadProgress.arabic) / 2)}
+                  >
+                    <span style={{ width: `${(uploadProgress.english + uploadProgress.arabic) / 2}%` }} />
+                  </div>
+                  <div className="admin-progress-steps">
+                    <span className={uploadProgress.english === 100 ? "is-complete" : ""}>
+                      {c.englishSlot}: {uploadProgress.english === 100 ? "100%" : `${uploadProgress.english}%`}
+                    </span>
+                    <span className={uploadProgress.arabic === 100 ? "is-complete" : ""}>
+                      {c.arabicSlot}: {uploadProgress.arabic === 100 ? "100%" : `${uploadProgress.arabic}%`}
+                    </span>
+                  </div>
+                </div>
+              )}
               <Button type="submit" className="admin-submit admin-submit--gmail" disabled={isUploading || !canSubmit}>
                 <Upload size={16} /> {isUploading ? "…" : c.upload}
               </Button>
@@ -1563,12 +2040,13 @@ export default function Admin() {
                     <Button
                       type="submit"
                       disabled={
+                        isSavingEdit ||
                         updateMedia.isPending ||
                         replaceMedia.isPending ||
                         (!editTitle.trim() && !replaceFile)
                       }
                     >
-                      {updateMedia.isPending || replaceMedia.isPending ? "…" : c.saveChanges}
+                      {isSavingEdit || updateMedia.isPending || replaceMedia.isPending ? "…" : c.saveChanges}
                     </Button>
                     <button
                       type="button"
@@ -1589,9 +2067,9 @@ export default function Admin() {
                     <article className="admin-media-item" key={item.id}>
                       <div className="admin-media-preview">
                         {item.kind === "image" ? (
-                          <img src={item.url} alt={item.title} />
+                          <ResolvedImg src={item.url} mimeType={item.mimeType} alt={item.title} />
                         ) : (
-                          <video src={item.url} controls preload="metadata" />
+                          <ResolvedVideo src={item.url} mimeType={item.mimeType} controls preload="metadata" />
                         )}
                         <span className="admin-item-lang-tag">{item.language.toUpperCase()}</span>
                       </div>
@@ -1612,7 +2090,7 @@ export default function Admin() {
                             onClick={async () => {
                               const newStatus = item.status === "published" ? "draft" : "published";
                               try {
-                                await updateFirestoreMediaStatus(String(item.id), newStatus);
+                                await updateFirestoreMedia(String(item.id), { status: newStatus });
                               } catch {}
                               try {
                                 if (typeof item.id === "number" || /^\d+$/.test(String(item.id))) {
@@ -1651,10 +2129,160 @@ export default function Admin() {
             </section>
           </section>
 
-          {/* Main Website Hero / Before-After / Quality / Closing Pictures Override */}
+          {/* Hero Background Animation Video Control */}
           <section className="admin-analytics-card admin-analytics-card--gmail">
             <div className="admin-card-heading">
               <span className="admin-index">03</span>
+              <h2>
+                {language === "ar"
+                  ? "فيديو الخلفية المتحرك للواجهة الرئيسية (Hero Background Video)"
+                  : "Hero Background Animation Video"}
+              </h2>
+            </div>
+            <p className="admin-review-import-copy">
+              {language === "ar"
+                ? "يعمل هذا الفيديو تلقائياً وبشكل متكرر في خلفية الواجهة الرئيسية خلف النصوص والأزرار، ليمنح الموقع مظهراً سينمائياً فخماً."
+                : "This animation video plays continuously in an infinite muted loop in the background of the Hero section behind all headings, body copy, and action buttons."}
+            </p>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))", gap: "1.2rem", marginTop: "1rem" }}>
+              <div style={{ background: "#0a0c0d", border: "1px solid rgba(244,242,237,0.12)", borderRadius: "8px", padding: "1.2rem", display: "flex", flexDirection: "column", gap: "0.8rem" }}>
+                <label className="admin-check" style={{ marginBottom: "0.5rem" }}>
+                  <input
+                    type="checkbox"
+                    checked={siteCustom.media.showHeroVideo !== false}
+                    onChange={(e) =>
+                      setSiteCustom((prev) => ({
+                        ...prev,
+                        media: { ...prev.media, showHeroVideo: e.target.checked },
+                      }))
+                    }
+                  />
+                  <strong>{language === "ar" ? "تشغيل فيديو الخلفية في الواجهة الرئيسية" : "Enable Hero Background Video"}</strong>
+                </label>
+
+                <div className="admin-field">
+                  <Label htmlFor="hero-video-url-input">
+                    {language === "ar" ? "رابط فيديو الخلفية (MP4 URL / Direct Link)" : "Hero Background Video URL (MP4 / Direct Link)"}
+                  </Label>
+                  <Input
+                    id="hero-video-url-input"
+                    value={siteCustom.media.heroVideo || ""}
+                    onChange={(e) =>
+                      setSiteCustom((prev) => ({
+                        ...prev,
+                        media: { ...prev.media, heroVideo: e.target.value },
+                      }))
+                    }
+                    placeholder="/assets/videos/hero-background.mp4 or https://..."
+                  />
+                </div>
+
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.2rem" }}>
+                  <label className="admin-replace-control owner-compact-upload" style={{ cursor: "pointer" }}>
+                    <Upload size={14} />
+                    <span>
+                      {heroVideoUploading
+                        ? `${language === "ar" ? "جارٍ الرفع..." : "Uploading"} ${heroVideoUploadPct}%`
+                        : language === "ar"
+                          ? "رفع فيديو خلفية (Firebase)"
+                          : "Upload Video File (Firebase)"}
+                    </span>
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime"
+                      disabled={heroVideoUploading}
+                      onChange={(e) => void handleHeroVideoUploadFile(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setSiteCustom((prev) => ({
+                        ...prev,
+                        media: { ...prev.media, heroVideo: "/assets/videos/hero-background.mp4", showHeroVideo: true },
+                      }))
+                    }
+                  >
+                    <RefreshCw size={12} /> {language === "ar" ? "استعادة فيديو الاستوديو الافتراضي" : "Use Built-in Studio Loop"}
+                  </Button>
+
+                  {allMedia.filter(m => m.kind === "video").length > 0 && (
+                    <div style={{ width: "100%", marginTop: "0.5rem" }}>
+                      <Label style={{ fontSize: "11px", color: "var(--gold)" }}>
+                        {language === "ar" ? "أو اختر من الفيديوهات المرفوعة:" : "Or pick from uploaded media:"}
+                      </Label>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", marginTop: "0.3rem" }}>
+                        {allMedia.filter(m => m.kind === "video").map(vm => {
+                          const rawOrFirestoreRef =
+                            firestoreMedia.find((f) => String(f.id) === String(vm.id))?.url || vm.url;
+                          return (
+                            <button
+                              key={vm.id}
+                              type="button"
+                              className="admin-status-button"
+                              style={{ textAlign: "start", fontSize: "11px", padding: "0.3rem 0.6rem" }}
+                              onClick={() => {
+                                if (rawOrFirestoreRef) {
+                                  setSiteCustom(prev => ({
+                                    ...prev,
+                                    media: { ...prev.media, heroVideo: rawOrFirestoreRef, showHeroVideo: true }
+                                  }));
+                                  toast.success(language === "ar" ? `تم تعيين: ${vm.title}` : `Hero video set to: ${vm.title}`);
+                                }
+                              }}
+                            >
+                              🎬 {vm.title} ({vm.language.toUpperCase()})
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ background: "#0a0c0d", border: "1px solid rgba(244,242,237,0.12)", borderRadius: "8px", overflow: "hidden", minHeight: "200px", display: "flex", flexDirection: "column" }}>
+                <div style={{ padding: "0.6rem 0.9rem", borderBottom: "1px solid rgba(244,242,237,0.08)", fontSize: "11px", color: "var(--soft)", display: "flex", justifyContent: "space-between" }}>
+                  <span>{language === "ar" ? "معاينة حية لخلفية الواجهة" : "Live Hero Background Preview"}</span>
+                  <span style={{ color: siteCustom.media.showHeroVideo !== false ? "var(--green)" : "var(--gold)" }}>
+                    {siteCustom.media.showHeroVideo !== false ? "● VIDEO ACTIVE" : "○ IMAGE ONLY"}
+                  </span>
+                </div>
+                <div style={{ position: "relative", flex: 1, minHeight: "180px", overflow: "hidden" }}>
+                  <ResolvedImg
+                    src={siteCustom.media.heroImage || images.hero}
+                    alt=""
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                  {siteCustom.media.showHeroVideo !== false && (
+                    <ResolvedVideo
+                      key={siteCustom.media.heroVideo || "/assets/videos/hero-background.mp4"}
+                      src={siteCustom.media.heroVideo || "/assets/videos/hero-background.mp4"}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 1 }}
+                    />
+                  )}
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(5,6,6,0.85) 0%, rgba(5,6,6,0.4) 60%, rgba(5,6,6,0.7) 100%)", zIndex: 2 }} />
+                  <div style={{ position: "relative", zIndex: 3, padding: "1.2rem", display: "flex", flexDirection: "column", justifyContent: "center", height: "100%" }}>
+                    <span style={{ color: "var(--gold)", fontSize: "9px", fontWeight: 700, letterSpacing: "0.15em" }}>PPF STUDIO</span>
+                    <strong style={{ color: "#fff", fontSize: "16px", marginTop: "4px" }}>Precision Paint Protection</strong>
+                    <span style={{ color: "rgba(244,242,237,0.7)", fontSize: "11px", marginTop: "4px" }}>Background animation plays continuously</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Main Website Hero / Before-After / Quality / Closing Pictures Override */}
+          <section className="admin-analytics-card admin-analytics-card--gmail">
+            <div className="admin-card-heading">
+              <span className="admin-index">04</span>
               <h2>
                 {language === "ar"
                   ? "صور الموقع الأساسية (Hero / Before & After / Quality / Closing)"
@@ -1678,7 +2306,7 @@ export default function Admin() {
               ).map(([slotKey, slotLabel]) => (
                 <div className="owner-core-image-card" key={slotKey}>
                   <div className="owner-core-image-preview">
-                    <img src={siteCustom.media[slotKey] || ""} alt={slotLabel} />
+                    <ResolvedImg src={siteCustom.media[slotKey] || ""} alt={slotLabel} />
                   </div>
                   <strong>{slotLabel}</strong>
                   <Input
@@ -1733,7 +2361,7 @@ export default function Admin() {
                     className={`owner-builtin-card ${isDeleted ? "owner-builtin-card--deleted" : ""}`}
                   >
                     <div className="owner-builtin-preview">
-                      <img src={currentSrc} alt={item.alt} />
+                      <ResolvedImg src={currentSrc} alt={item.alt} />
                       <span className="admin-item-lang-tag">#{item.id}</span>
                       {isDeleted && <span className="owner-deleted-badge">DELETED / HIDDEN</span>}
                     </div>
@@ -1795,7 +2423,7 @@ export default function Admin() {
                     className={`owner-builtin-card ${isDeleted ? "owner-builtin-card--deleted" : ""}`}
                   >
                     <div className="owner-builtin-preview">
-                      <img src={ov?.poster || vItem.src} alt={vItem.title} />
+                      <ResolvedImg src={ov?.poster || vItem.src} alt={vItem.title} />
                       <span className="admin-item-lang-tag">VIDEO 0{idx + 1}</span>
                       {isDeleted && <span className="owner-deleted-badge">DELETED / HIDDEN</span>}
                     </div>

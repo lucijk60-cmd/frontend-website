@@ -86,6 +86,8 @@ export interface BrandSystemConfig {
 
 export interface MediaOverridesConfig {
   heroImage?: string;
+  heroVideo?: string;
+  showHeroVideo?: boolean;
   beforeImage?: string;
   afterImage?: string;
   qualityImage?: string;
@@ -192,7 +194,7 @@ export function createDefaultSiteCustomization(): SiteCustomization {
       manifesto: true,
       work: true,
       beforeAfter: true,
-      videos: true,
+      videos: false,
       process: true,
       quality: true,
       stats: true,
@@ -225,6 +227,8 @@ export function createDefaultSiteCustomization(): SiteCustomization {
     },
     media: {
       heroImage: images.hero,
+      heroVideo: "/assets/videos/hero-background.mp4",
+      showHeroVideo: true,
       beforeImage: images.detailSuv,
       afterImage: images.secondaryDetail,
       qualityImage: images.installation,
@@ -256,6 +260,8 @@ export function mergeSiteCustomization(raw?: Partial<SiteCustomization> | null):
     media: {
       ...defaults.media,
       ...(raw.media ?? {}),
+      heroVideo: typeof raw.media?.heroVideo === "string" ? raw.media.heroVideo : defaults.media.heroVideo,
+      showHeroVideo: typeof raw.media?.showHeroVideo === "boolean" ? raw.media.showHeroVideo : defaults.media.showHeroVideo,
       deletedGalleryIds: Array.isArray(raw.media?.deletedGalleryIds) ? raw.media.deletedGalleryIds : [],
       deletedVideoIndices: Array.isArray(raw.media?.deletedVideoIndices) ? raw.media.deletedVideoIndices : [],
       galleryOverrides: raw.media?.galleryOverrides ?? {},

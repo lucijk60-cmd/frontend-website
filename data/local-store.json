@@ -1,5 +1,5 @@
 {
-  "nextId": 119,
+  "nextId": 124,
   "reviews": [
     {
       "id": 1,
@@ -258,6 +258,51 @@
       "referrer": "https://ais-dev-fjh7xu2hpl32pp4udrkd6d-736681493362.europe-west2.run.app/",
       "id": 118,
       "createdAt": "2026-10-15T13:50:01.669Z"
+    },
+    {
+      "visitorKeyHash": "5e7612b74cee7ca1b3bcd6ecf7b7c062b7904abb7b20eac5207cfb9f3ea98315",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "unknown",
+      "referrer": null,
+      "id": 119,
+      "createdAt": "2026-11-13T14:10:55.326Z"
+    },
+    {
+      "visitorKeyHash": "c4ab14dd16e6b75dbc2b3b7e66846f88286cf20ed8db1c45e463716af50f3e40",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://ais-dev-fjh7xu2hpl32pp4udrkd6d-736681493362.europe-west2.run.app/",
+      "id": 120,
+      "createdAt": "2026-11-13T14:10:57.885Z"
+    },
+    {
+      "visitorKeyHash": "c4ab14dd16e6b75dbc2b3b7e66846f88286cf20ed8db1c45e463716af50f3e40",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://ais-dev-fjh7xu2hpl32pp4udrkd6d-736681493362.europe-west2.run.app/",
+      "id": 121,
+      "createdAt": "2026-11-13T14:13:58.215Z"
+    },
+    {
+      "visitorKeyHash": "20035900f3cd5f580c767f8e7b9ed9f0b0269dc1bc5bc12123d1b0e310c12168",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "unknown",
+      "referrer": null,
+      "id": 122,
+      "createdAt": "2026-11-13T14:19:33.656Z"
+    },
+    {
+      "visitorKeyHash": "c4ab14dd16e6b75dbc2b3b7e66846f88286cf20ed8db1c45e463716af50f3e40",
+      "path": "/",
+      "countryCode": "UNKNOWN",
+      "deviceClass": "desktop",
+      "referrer": "https://ais-dev-fjh7xu2hpl32pp4udrkd6d-736681493362.europe-west2.run.app/",
+      "id": 123,
+      "createdAt": "2026-11-13T14:19:36.265Z"
     }
   ],
   "siteConfig": null

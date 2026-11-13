@@ -38,6 +38,7 @@ import { selectPublishedMedia, selectVideoSource } from "@/lib/media";
 import {
   fetchFirestoreAdminMedia,
   resolveMediaUrl,
+  useResolvedMediaUrl,
   type FirebaseMediaItem,
 } from "@/lib/firebaseMedia";
 import { getLocalizedReviewText, getReviewSubmissionNotice, normalizeReviewReference } from "@/lib/reviews";
@@ -219,6 +220,32 @@ export default function Home() {
     };
   }, []);
 
+  // Resolve any firestore:// references stored inside galleryOverrides or videoOverrides
+  useEffect(() => {
+    let active = true;
+    const refs: Array<{ ref: string; mime: string }> = [];
+    for (const ov of Object.values(siteCustom.media.galleryOverrides ?? {})) {
+      if (ov?.src?.startsWith("firestore://")) refs.push({ ref: ov.src, mime: "image/jpeg" });
+      if (ov?.arSrc?.startsWith("firestore://")) refs.push({ ref: ov.arSrc, mime: "image/jpeg" });
+    }
+    for (const ov of Object.values(siteCustom.media.videoOverrides ?? {})) {
+      if (ov?.src?.startsWith("firestore://")) refs.push({ ref: ov.src, mime: "video/mp4" });
+      if (ov?.poster?.startsWith("firestore://")) refs.push({ ref: ov.poster, mime: "image/jpeg" });
+    }
+    for (const { ref, mime } of refs) {
+      const cleanId = ref.replace(/^firestore:\/\//, "").trim();
+      if (!cleanId || resolvedUrls[cleanId]) continue;
+      void resolveMediaUrl(cleanId, ref, mime).then((resolved) => {
+        if (active && resolved) {
+          setResolvedUrls((prev) => ({ ...prev, [cleanId]: resolved }));
+        }
+      });
+    }
+    return () => {
+      active = false;
+    };
+  }, [siteCustom.media.galleryOverrides, siteCustom.media.videoOverrides, resolvedUrls]);
+
   const allPublishedMedia = useMemo(() => {
     const list: Array<{ id: number | string; kind: "image" | "video"; language: "en" | "ar" | "shared"; status: "draft" | "published"; url: string; title: string }> = [];
     const seen = new Set<string>();
@@ -226,12 +253,14 @@ export default function Home() {
     for (const fm of firestoreMedia) {
       const cleanId = String(fm.id);
       seen.add(cleanId);
+      const resolvedUrl = fm.url.startsWith("firestore://") ? resolvedUrls[cleanId] || "" : fm.url;
+      if (!resolvedUrl) continue;
       list.push({
         id: cleanId,
         kind: fm.kind,
         language: fm.language,
         status: fm.status,
-        url: resolvedUrls[cleanId] || fm.url,
+        url: resolvedUrl,
         title: fm.title,
       });
     }
@@ -349,18 +378,53 @@ export default function Home() {
   };
 
   const localizedGalleryItems = useMemo(() => {
-    const staticItems = getCustomStaticGalleryItems(language, siteCustom);
-    const uploadedItems = selectPublishedMedia(allPublishedMedia as any, mediaLanguage, "image")
+    const resolveRef = (raw: string) => {
+      if (!raw.startsWith("firestore://")) return raw;
+      return resolvedUrls[raw.replace(/^firestore:\/\//, "").trim()] || "";
+    };
+    const staticItems = getCustomStaticGalleryItems(language, siteCustom).map((item) => ({
+      ...item,
+      src: resolveRef(item.src) || images.hero,
+    }));
+    const uploadedItems = selectPublishedMedia(allPublishedMedia, mediaLanguage, "image")
+      .filter((item) => Boolean(item.url) && !item.url.startsWith("firestore://"))
       .map((item, idx) => ({ id: 10000 + idx, category: "Admin Uploads", src: item.url, alt: item.title }));
     return [...staticItems, ...uploadedItems];
-  }, [language, mediaLanguage, allPublishedMedia, siteCustom]);
+  }, [language, mediaLanguage, allPublishedMedia, siteCustom, resolvedUrls]);
 
   const videoDisplayItems = useMemo(() => {
-    const staticVideos = getCustomStaticVideoItems(siteCustom);
-    const uploadedVideos = selectPublishedMedia(allPublishedMedia as any, mediaLanguage, "video")
+    const resolveRef = (raw: string) => {
+      if (!raw.startsWith("firestore://")) return raw;
+      return resolvedUrls[raw.replace(/^firestore:\/\//, "").trim()] || "";
+    };
+    const staticVideos = getCustomStaticVideoItems(siteCustom).map((v) => ({
+      ...v,
+      src: resolveRef(v.src),
+      poster: resolveRef(v.poster) || images.galleryCoupe,
+    }));
+    const uploadedVideos = selectPublishedMedia(allPublishedMedia, mediaLanguage, "video")
+      .filter((item) => Boolean(item.url) && !item.url.startsWith("firestore://"))
       .map((item) => ({ title: item.title, src: item.url, poster: images.galleryCoupe, isUploaded: true }));
     return [...staticVideos, ...uploadedVideos];
-  }, [mediaLanguage, allPublishedMedia, siteCustom]);
+  }, [mediaLanguage, allPublishedMedia, siteCustom, resolvedUrls]);
+
+  const heroVideoSource = useMemo(() => {
+    if (siteCustom.media.heroVideo && siteCustom.media.heroVideo.trim()) {
+      return siteCustom.media.heroVideo.trim();
+    }
+    const uploadedVideo = allPublishedMedia.find((m) => m.kind === "video");
+    if (uploadedVideo && uploadedVideo.url) {
+      return uploadedVideo.url;
+    }
+    return "/assets/videos/hero-background.mp4";
+  }, [allPublishedMedia, siteCustom.media.heroVideo]);
+
+  const resolvedHeroImage = useResolvedMediaUrl(siteCustom.media.heroImage || images.hero) || images.hero;
+  const resolvedHeroVideo = useResolvedMediaUrl(heroVideoSource, "video/mp4");
+  const resolvedBeforeImage = useResolvedMediaUrl(siteCustom.media.beforeImage || images.detailSuv) || images.detailSuv;
+  const resolvedAfterImage = useResolvedMediaUrl(siteCustom.media.afterImage || images.secondaryDetail) || images.secondaryDetail;
+  const resolvedQualityImage = useResolvedMediaUrl(siteCustom.media.qualityImage || images.installation) || images.installation;
+  const resolvedClosingImage = useResolvedMediaUrl(siteCustom.media.closingImage || images.hero) || images.hero;
 
   const filteredGallery = useMemo(() => {
     if (activeFilter === 0) return localizedGalleryItems;
@@ -498,7 +562,21 @@ export default function Home() {
       <main>
         {siteCustom.sections.hero && (
           <section id="home" className="hero-section">
-            <img src={siteCustom.media.heroImage || images.hero} alt="Black sports coupe receiving precision paint protection film installation" className="hero-image" fetchPriority="high" decoding="async" />
+            <img src={resolvedHeroImage} alt="Black sports coupe receiving precision paint protection film installation" className="hero-image" fetchPriority="high" decoding="async" />
+            {siteCustom.media.showHeroVideo !== false && resolvedHeroVideo && (
+              <video
+                className="hero-video"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="auto"
+                poster={resolvedHeroImage}
+                key={resolvedHeroVideo}
+              >
+                <source src={resolvedHeroVideo} type="video/mp4" />
+              </video>
+            )}
             <div className="hero-overlay" />
             <div className="hero-grid-lines" />
             <div className="hero-content page-width">
@@ -594,10 +672,10 @@ export default function Home() {
             </div>
             <Reveal delay={100} className="comparison-frame">
               <div className="comparison-stage" dir="ltr">
-                <img src={siteCustom.media.afterImage || images.secondaryDetail} alt={c.afterLabel} className="comparison-image comparison-image--after" loading="lazy" decoding="async" />
+                <img src={resolvedAfterImage} alt={c.afterLabel} className="comparison-image comparison-image--after" loading="lazy" decoding="async" />
                 <div className="comparison-after-sheen" aria-hidden="true" />
                 <div className="comparison-before" style={{ clipPath: `inset(0 ${100 - comparison}% 0 0)` }}>
-                  <img src={siteCustom.media.beforeImage || images.detailSuv} alt={c.beforeLabel} className="comparison-image comparison-image--before" loading="lazy" decoding="async" />
+                  <img src={resolvedBeforeImage} alt={c.beforeLabel} className="comparison-image comparison-image--before" loading="lazy" decoding="async" />
                 </div>
                 <div className="comparison-divider" style={{ left: `${comparison}%` }}>
                   <span aria-hidden="true" />
@@ -631,7 +709,7 @@ export default function Home() {
 
         {siteCustom.sections.quality && (
           <section id="about" className="quality-section">
-            <div className="quality-image-wrap"><img src={siteCustom.media.qualityImage || images.installation} alt="Precision PPF installation in a controlled studio" loading="lazy" decoding="async" /><div className="quality-image-caption"><span>07</span><span>{extraTexts.materialInstallCaption}</span></div></div>
+            <div className="quality-image-wrap"><img src={resolvedQualityImage} alt="Precision PPF installation in a controlled studio" loading="lazy" decoding="async" /><div className="quality-image-caption"><span>07</span><span>{extraTexts.materialInstallCaption}</span></div></div>
             <div className="quality-content"><Reveal><SectionHeader eyebrow={c.qualityEyebrow} title={c.qualityTitle} body={c.qualityBody} /></Reveal><Reveal delay={100} className="quality-list">{c.qualityFeatures.map((feature, index) => <div className="quality-item" key={`${feature}-${index}`}><span>0{index + 1}</span><Check size={16} /><strong>{feature}</strong></div>)}</Reveal><Reveal delay={180}><button className="text-link" onClick={() => scrollToSection(siteCustom.buttons.qualityCtaTarget || "contact")}>{isArabic ? (siteCustom.buttons.qualityCtaTextAr || "تحدث مع فريقنا") : (siteCustom.buttons.qualityCtaTextEn || "Talk to our team")}<ArrowUpRight size={16} /></button></Reveal></div>
           </section>
         )}
@@ -656,7 +734,7 @@ export default function Home() {
 
         {siteCustom.sections.closingCta && (
           <section id="contact" className="closing-cta">
-            <div className="closing-image"><img src={siteCustom.media.closingImage || images.hero} alt="Luxury vehicle protected with clear PPF" loading="lazy" decoding="async" /><div className="closing-shade" /></div>
+            <div className="closing-image"><img src={resolvedClosingImage} alt="Luxury vehicle protected with clear PPF" loading="lazy" decoding="async" /><div className="closing-shade" /></div>
             <div className="closing-content page-width"><Reveal><div className="eyebrow eyebrow--light"><span className="eyebrow-rule" />{c.contactEyebrow}</div><h2>{c.contactTitle}</h2><p>{c.contactBody}</p><WhatsAppLink language={language} className="button button--gold" customHref={siteCustom.buttons.closingCtaUrl || customWhatsappUrl}>{c.ctaButton}</WhatsAppLink></Reveal><div className="closing-contact"><span>{c.contactLabel}</span><a href={siteCustom.buttons.closingCtaUrl || customWhatsappUrl || whatsappHref(language)} target="_blank" rel="noreferrer">{siteCustom.brand.whatsappDisplay}</a></div></div>
           </section>
         )}

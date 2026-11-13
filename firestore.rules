@@ -149,15 +149,22 @@ service cloud.firestore {
       allow delete: if isAdmin() && isValidId(reviewId);
     }
 
+    // Collection: /test/connection (health check probe)
+    match /test/{docId} {
+      allow get: if docId == 'connection';
+      allow list, write: if false;
+    }
+
     // Collection: /adminMedia/{mediaId}
     match /adminMedia/{mediaId} {
-      allow get, list: if existing().status == 'published' || isAdmin();
+      allow get, list: if true;
       allow create: if isValidId(mediaId) && isValidAdminMedia(incoming()) &&
         incoming().createdAt == request.time && (
           (isAdmin() && incoming().ownerId == request.auth.uid) ||
           incoming().ownerId == 'admin-passcode'
         );
       allow update: if isAdmin() && isValidId(mediaId) && isValidAdminMedia(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
         incoming().createdAt == existing().createdAt &&
         incoming().updatedAt == request.time &&
         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'storageKey', 'url', 'mimeType', 'sizeBytes', 'totalChunks', 'status', 'updatedAt']);
@@ -168,7 +175,8 @@ service cloud.firestore {
         allow get, list: if true;
         allow create: if isValidId(mediaId) && isValidId(chunkId) && isValidMediaChunk(incoming()) &&
           incoming().mediaId == mediaId &&
-          incoming().createdAt == request.time;
+          incoming().createdAt == request.time &&
+          exists(/databases/$(database)/documents/adminMedia/$(mediaId));
         allow update: if false;
         allow delete: if isAdmin() && isValidId(mediaId) && isValidId(chunkId);
       }
